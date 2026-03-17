@@ -1304,36 +1304,47 @@ PluginComponent {
                                         }
                                     }
 
-                                    // Playback controls
+                                    // Playback controls - 使用原生 Button 组件，放大并美化
                                     Row {
                                         width: parent.width
-                                        height: 36
+                                        height: 48
                                         anchors.horizontalCenter: parent.horizontalCenter
-                                        spacing: Theme.spacingL
+                                        spacing: Theme.spacingXL
 
                                         // Previous button
-                                        MouseArea {
-                                            width: 36
-                                            height: 36
+                                        Button {
                                             anchors.verticalCenter: parent.verticalCenter
+                                            flat: true
+                                            icon.name: "skip_previous"
+                                            icon.width: 32
+                                            icon.height: 32
+                                            icon.color: Theme.surfaceText
+                                            background: Rectangle {
+                                                color: parent.pressed ? Theme.withAlpha(Theme.surfaceText, 0.1) : "transparent"
+                                                radius: 24
+                                            }
                                             onClicked: {
                                                 if (root.activePlayer)
                                                     root.activePlayer.previous();
                                             }
-
-                                            DankIcon {
-                                                anchors.centerIn: parent
-                                                name: "skip_previous"
-                                                size: 28
-                                                color: Theme.surfaceText
-                                            }
                                         }
 
-                                        // Play/Pause button
-                                        MouseArea {
-                                            width: 40
-                                            height: 40
+                                        // Play/Pause button - 主按钮，更大更突出
+                                        Button {
                                             anchors.verticalCenter: parent.verticalCenter
+                                            width: 56
+                                            height: 56
+                                            flat: false
+                                            icon.name: root.activePlayer && root.activePlayer.playbackState === MprisPlaybackState.Playing ? "pause" : "play_arrow"
+                                            icon.width: 36
+                                            icon.height: 36
+                                            icon.color: Theme.surface
+                                            background: Rectangle {
+                                                color: Theme.primary
+                                                radius: 28
+                                                border.color: Theme.withAlpha(Theme.surface, 0.3)
+                                                border.width: 2
+                                            }
                                             onClicked: {
                                                 if (root.activePlayer) {
                                                     if (root.activePlayer.playbackState === MprisPlaybackState.Playing)
@@ -1342,37 +1353,23 @@ PluginComponent {
                                                         root.activePlayer.play();
                                                 }
                                             }
-
-                                            Rectangle {
-                                                anchors.fill: parent
-                                                radius: 20
-                                                color: Theme.primary
-                                                opacity: 0.1
-                                            }
-
-                                            DankIcon {
-                                                anchors.centerIn: parent
-                                                name: root.activePlayer && root.activePlayer.playbackState === MprisPlaybackState.Playing ? "pause" : "play_arrow"
-                                                size: 32
-                                                color: Theme.primary
-                                            }
                                         }
 
                                         // Next button
-                                        MouseArea {
-                                            width: 36
-                                            height: 36
+                                        Button {
                                             anchors.verticalCenter: parent.verticalCenter
+                                            flat: true
+                                            icon.name: "skip_next"
+                                            icon.width: 32
+                                            icon.height: 32
+                                            icon.color: Theme.surfaceText
+                                            background: Rectangle {
+                                                color: parent.pressed ? Theme.withAlpha(Theme.surfaceText, 0.1) : "transparent"
+                                                radius: 24
+                                            }
                                             onClicked: {
                                                 if (root.activePlayer)
                                                     root.activePlayer.next();
-                                            }
-
-                                            DankIcon {
-                                                anchors.centerIn: parent
-                                                name: "skip_next"
-                                                size: 28
-                                                color: Theme.surfaceText
                                             }
                                         }
                                     }

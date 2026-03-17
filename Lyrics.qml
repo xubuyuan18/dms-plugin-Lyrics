@@ -11,8 +11,11 @@ PluginComponent {
     id: root
 
     property bool cachingEnabled: pluginData.cachingEnabled ?? true
+    property bool lrclibEnabled: pluginData.lrclibEnabled ?? true
+    property bool neteaseEnabled: pluginData.neteaseEnabled ?? true
     property bool customApiEnabled: pluginData.customApiEnabled ?? false
     property string customApiUrl: pluginData.customApiUrl ?? ""
+    property string customApiMethod: pluginData.customApiMethod ?? "GET"
 
     readonly property MprisPlayer activePlayer: MprisController.activePlayer
     property var allPlayers: MprisController.availablePlayers
@@ -286,6 +289,7 @@ PluginComponent {
             return;
         }
 
+        // 尝试缓存
         if (cachingEnabled) {
             readFromCache(capturedTitle, capturedArtist, function (cached) {
                 // Guard: track may have changed while the file read was in progress
@@ -307,6 +311,20 @@ PluginComponent {
         } else {
             cacheStatus = status.cacheDisabled;
             _startFetch();
+        }
+    }
+
+    function _startFetch() {
+        // 根据启用的源按顺序获取
+        if (lrclibEnabled) {
+            _fetchFromLrclib(_lastFetchedTrack, _lastFetchedArtist);
+        } else if (neteaseEnabled) {
+            lrclibStatus = status.skippedConfig;
+            _fetchFromNetease(_lastFetchedTrack, _lastFetchedArtist);
+        } else {
+            lrclibStatus = status.skippedConfig;
+            neteaseStatus = status.skippedConfig;
+            _setFinalNotFound(status.notFound);
         }
     }
 
@@ -397,6 +415,18 @@ PluginComponent {
     // -------------------------------------------------------------------------
 
     function _fetchFromLrclib(expectedTitle, expectedArtist) {
+        if (!lrclibEnabled) {
+            lrclibStatus = status.skippedConfig;
+            console.info("[Lyrics] lrclib: 已禁用，跳过");
+            // 尝试下一个源
+            if (neteaseEnabled) {
+                _fetchFromNetease(expectedTitle, expectedArtist);
+            } else {
+                _setFinalNotFound(status.notFound);
+            }
+            return;
+        }
+
         if (lyricStatus === lyricState.synced) {
             lrclibStatus = status.skippedFound;
             console.info("[Lyrics] lrclib: 已跳过 (已找到同步歌词)");
@@ -462,12 +492,20 @@ PluginComponent {
                 root.lrclibStatus = status.error;
                 console.warn("[Lyrics] lrclib: 解析响应失败 — " + e);
                 console.warn("[Lyrics] lrclib: 原始数据: " + rawData.substring(0, 200));
-                root._fetchFromNetease(expectedTitle, expectedArtist);
+                if (neteaseEnabled) {
+                    root._fetchFromNetease(expectedTitle, expectedArtist);
+                } else {
+                    _setFinalNotFound(status.error);
+                }
             }
         }, function (errMsg) {
             root.lrclibStatus = status.error;
             console.warn("[Lyrics] lrclib: 请求失败 — " + errMsg);
-            root._fetchFromNetease(expectedTitle, expectedArtist);
+            if (neteaseEnabled) {
+                root._fetchFromNetease(expectedTitle, expectedArtist);
+            } else {
+                _setFinalNotFound(status.error);
+            }
         });
     }
 
@@ -476,6 +514,13 @@ PluginComponent {
     // -------------------------------------------------------------------------
 
     function _fetchFromNetease(expectedTitle, expectedArtist) {
+        if (!neteaseEnabled) {
+            neteaseStatus = status.skippedConfig;
+            console.info("[Lyrics] 网易云: 已禁用，跳过");
+            _setFinalNotFound(status.notFound);
+            return;
+        }
+
         if (lyricStatus === lyricState.synced) {
             neteaseStatus = status.skippedFound;
             console.info("[Lyrics] 网易云: 已跳过 (已找到同步歌词)");
@@ -623,6 +668,10 @@ PluginComponent {
             .replace(/{album}/g, encodeURIComponent(currentAlbum || ""));
 
         console.info("[Lyrics] 自定义API: 请求 URL: " + url);
+        console.info("[Lyrics] 自定义API: 请求方法: " + customApiMethod);
+
+        // 根据请求方法处理
+        var isPost = customApiMethod === "POST";
 
         root._cancelActiveFetch = _xhrGet(url, 20000, function (responseText, httpStatus) {
             var rawData = (responseText || "").trim();

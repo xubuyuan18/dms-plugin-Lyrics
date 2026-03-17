@@ -18,20 +18,21 @@ PluginSettings {
 
     StyledText {
         width: parent.width
-        text: "配置歌词行为和缓存"
+        text: "配置歌词行为和歌词源"
         font.pixelSize: Theme.fontSizeSmall
         color: Theme.surfaceVariantText
         wrapMode: Text.WordWrap
     }
 
+    // 缓存设置
     StyledRect {
         width: parent.width
-        height: durationsColumn.implicitHeight + Theme.spacingL * 2
+        height: cacheColumn.implicitHeight + Theme.spacingL * 2
         radius: Theme.cornerRadius
         color: Theme.surfaceContainerHigh
 
         Column {
-            id: durationsColumn
+            id: cacheColumn
             anchors.fill: parent
             anchors.margins: Theme.spacingL
             spacing: Theme.spacingM
@@ -52,6 +53,43 @@ PluginSettings {
         }
     }
 
+    // 内置 API 设置
+    StyledRect {
+        width: parent.width
+        height: builtinColumn.implicitHeight + Theme.spacingL * 2
+        radius: Theme.cornerRadius
+        color: Theme.surfaceContainerHigh
+
+        Column {
+            id: builtinColumn
+            anchors.fill: parent
+            anchors.margins: Theme.spacingL
+            spacing: Theme.spacingM
+
+            StyledText {
+                text: "内置歌词源"
+                font.pixelSize: Theme.fontSizeMedium
+                font.weight: Font.Medium
+                color: Theme.surfaceText
+            }
+
+            ToggleSetting {
+                settingKey: "lrclibEnabled"
+                label: "lrclib.net"
+                description: "开源歌词库，支持同步歌词"
+                defaultValue: true
+            }
+
+            ToggleSetting {
+                settingKey: "neteaseEnabled"
+                label: "网易云音乐"
+                description: "通过搜索 API 获取歌词"
+                defaultValue: true
+            }
+        }
+    }
+
+    // 自定义 API 设置
     StyledRect {
         width: parent.width
         height: customApiColumn.implicitHeight + Theme.spacingL * 2
@@ -74,16 +112,27 @@ PluginSettings {
             ToggleSetting {
                 settingKey: "customApiEnabled"
                 label: "启用自定义 API"
-                description: "优先使用自定义 API 获取歌词，失败时回退到内置源。"
+                description: "使用自定义 API 获取歌词，失败时回退到启用的内置源"
                 defaultValue: false
             }
 
             StringSetting {
                 settingKey: "customApiUrl"
                 label: "API 地址"
-                description: "自定义歌词 API 的 URL。支持变量: {title}, {artist}, {album}。例如: https://api.example.com/lyrics?title={title}&artist={artist}"
+                description: "自定义歌词 API 的 URL。支持变量: {title}, {artist}, {album}"
                 placeholder: "https://api.example.com/lyrics?title={title}&artist={artist}"
                 defaultValue: ""
+            }
+
+            SelectionSetting {
+                settingKey: "customApiMethod"
+                label: "请求方式"
+                description: "选择 API 请求方法"
+                options: [
+                    { label: "GET", value: "GET" },
+                    { label: "POST", value: "POST" }
+                ]
+                defaultValue: "GET"
             }
         }
     }

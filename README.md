@@ -16,7 +16,7 @@
 
 ## 截图
 
-![Plugin Screenshot](./screenshots.png)
+![截图](./Lyrics Plugin.png)
 
 ## 安装
 

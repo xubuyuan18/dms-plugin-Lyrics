@@ -1016,11 +1016,22 @@ PluginComponent {
                             showAnimation: true         // 启用加载动画
                         }
 
+                        // API 状态指示器 - 右下角
+                        ApiStatusIndicators {
+                            anchors {
+                                right: parent.right
+                                bottom: parent.bottom
+                                margins: Theme.spacingM
+                            }
+                            z: 20
+                        }
+
                         Row {
                             id: nowPlayingContent
                             anchors {
                                 left: parent.left; right: parent.right
                                 top: parent.top
+                                bottom: parent.bottom
                                 margins: Theme.spacingM
                             }
                             spacing: Theme.spacingM
@@ -1317,6 +1328,26 @@ PluginComponent {
     }
 
     // -------------------------------------------------------------------------
+    // API status indicator color helper
+    // -------------------------------------------------------------------------
+
+    function _apiStatusColor(statusVal) {
+        switch (statusVal) {
+            case status.error:
+                return Theme.error;      // 红色
+            case status.searching:
+                return Theme.warning;    // 黄色
+            case status.found:
+            case status.cacheHit:
+                return Theme.success;    // 绿色
+            case status.none:
+            case status.skippedConfig:
+            default:
+                return Theme.surfaceVariantText; // 灰色
+        }
+    }
+
+    // -------------------------------------------------------------------------
     // Reusable source status card
     // -------------------------------------------------------------------------
 
@@ -1434,6 +1465,65 @@ PluginComponent {
     // ============================================
     popoutWidth: 420
     popoutHeight: 300
+
+    // -------------------------------------------------------------------------
+    // API Status Indicators Component
+    // -------------------------------------------------------------------------
+    component ApiStatusIndicators: Row {
+        id: apiIndicators
+        spacing: 6
+
+        // 缓存指示器
+        Rectangle {
+            width: 8
+            height: 8
+            radius: 2
+            color: root._apiStatusColor(root.cacheStatus)
+            ToolTip.text: "缓存: " + root.chipLabel(root.cacheStatus)
+            ToolTip.visible: cacheMouse.containsMouse
+            ToolTip.delay: 500
+
+            MouseArea {
+                id: cacheMouse
+                anchors.fill: parent
+                hoverEnabled: true
+            }
+        }
+
+        // lrclib 指示器
+        Rectangle {
+            width: 8
+            height: 8
+            radius: 2
+            color: root._apiStatusColor(root.lrclibStatus)
+            ToolTip.text: "lrclib: " + root.chipLabel(root.lrclibStatus)
+            ToolTip.visible: lrclibMouse.containsMouse
+            ToolTip.delay: 500
+
+            MouseArea {
+                id: lrclibMouse
+                anchors.fill: parent
+                hoverEnabled: true
+            }
+        }
+
+        // 网易云指示器
+        Rectangle {
+            width: 8
+            height: 8
+            radius: 2
+            color: root._apiStatusColor(root.neteaseStatus)
+            ToolTip.text: "网易云: " + root.chipLabel(root.neteaseStatus)
+            ToolTip.visible: neteaseMouse.containsMouse
+            ToolTip.delay: 500
+
+            MouseArea {
+                id: neteaseMouse
+                anchors.fill: parent
+                hoverEnabled: true
+            }
+        }
+    }
 
     Component.onCompleted: {
         console.info("[Lyrics] 插件已加载");

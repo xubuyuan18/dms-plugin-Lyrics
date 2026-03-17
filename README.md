@@ -22,8 +22,8 @@
 
 ```bash
 cd ~/.config/DankMaterialShell/plugins
-git clone https://github.com/xubuyuan18/dms-plugin-Lyrics.git musicLyrics
-dms ipc call plugins reload musicLyrics
+git clone https://github.com/xubuyuan18/dms-plugin-Lyrics.git Lyrics
+dms ipc call plugins reload Lyrics
 ```
 
 ## 设置

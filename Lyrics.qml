@@ -965,15 +965,38 @@ PluginComponent {
     // -------------------------------------------------------------------------
     component ApiStatusIndicators: Row {
         id: apiIndicators
-        spacing: 6
+        spacing: 8
 
-        // 缓存指示器
+        // 缓存指示器 - 带图标的圆角矩形
         Rectangle {
-            width: 8
-            height: 8
-            radius: 2
+            width: 56
+            height: 24
+            radius: 12
             color: root._apiStatusColor(root.cacheStatus)
-            ToolTip.text: "缓存: " + root.chipLabel(root.cacheStatus)
+            opacity: 0.15
+            border.color: root._apiStatusColor(root.cacheStatus)
+            border.width: 1
+
+            Row {
+                anchors.centerIn: parent
+                spacing: 4
+
+                DankIcon {
+                    name: "storage"
+                    size: 14
+                    color: root._apiStatusColor(root.cacheStatus)
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+
+                StyledText {
+                    text: "缓存"
+                    font.pixelSize: 11
+                    color: root._apiStatusColor(root.cacheStatus)
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+            }
+
+            ToolTip.text: root.chipLabel(root.cacheStatus)
             ToolTip.visible: cacheMouse.containsMouse
             ToolTip.delay: 500
 
@@ -984,13 +1007,36 @@ PluginComponent {
             }
         }
 
-        // lrclib 指示器
+        // lrclib 指示器 - 带图标的圆角矩形
         Rectangle {
-            width: 8
-            height: 8
-            radius: 2
+            width: 56
+            height: 24
+            radius: 12
             color: root._apiStatusColor(root.lrclibStatus)
-            ToolTip.text: "lrclib: " + root.chipLabel(root.lrclibStatus)
+            opacity: 0.15
+            border.color: root._apiStatusColor(root.lrclibStatus)
+            border.width: 1
+
+            Row {
+                anchors.centerIn: parent
+                spacing: 4
+
+                DankIcon {
+                    name: "library_music"
+                    size: 14
+                    color: root._apiStatusColor(root.lrclibStatus)
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+
+                StyledText {
+                    text: "LRC"
+                    font.pixelSize: 11
+                    color: root._apiStatusColor(root.lrclibStatus)
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+            }
+
+            ToolTip.text: root.chipLabel(root.lrclibStatus)
             ToolTip.visible: lrclibMouse.containsMouse
             ToolTip.delay: 500
 
@@ -1001,13 +1047,36 @@ PluginComponent {
             }
         }
 
-        // 网易云指示器
+        // 网易云指示器 - 带图标的圆角矩形
         Rectangle {
-            width: 8
-            height: 8
-            radius: 2
+            width: 56
+            height: 24
+            radius: 12
             color: root._apiStatusColor(root.neteaseStatus)
-            ToolTip.text: "网易云: " + root.chipLabel(root.neteaseStatus)
+            opacity: 0.15
+            border.color: root._apiStatusColor(root.neteaseStatus)
+            border.width: 1
+
+            Row {
+                anchors.centerIn: parent
+                spacing: 4
+
+                DankIcon {
+                    name: "cloud"
+                    size: 14
+                    color: root._apiStatusColor(root.neteaseStatus)
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+
+                StyledText {
+                    text: "网易"
+                    font.pixelSize: 11
+                    color: root._apiStatusColor(root.neteaseStatus)
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+            }
+
+            ToolTip.text: root.chipLabel(root.neteaseStatus)
             ToolTip.visible: neteaseMouse.containsMouse
             ToolTip.delay: 500
 

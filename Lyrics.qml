@@ -545,7 +545,7 @@ PluginComponent {
         console.info("[Lyrics] 网易云: 步骤1 - 搜索歌曲ID - \"" + expectedTitle + "\" - " + expectedArtist);
 
         // Step 1: Search song ID using Netease search API
-        var searchUrl = "https://music.163.com/api/search/get/web?s=" + encodeURIComponent(expectedTitle + " " + expectedArtist) + "&type=1&limit=5";
+        var searchUrl = "http://music.163.com/api/search/get/web?csrf_token=&hlpretag=&hlposttag=&s=" + encodeURIComponent(expectedTitle + " " + expectedArtist) + "&type=1&offset=0&total=true&limit=2";
 
         root._cancelActiveFetch = _xhrGet(searchUrl, 15000, function (responseText, httpStatus) {
             // Guard: track may have changed

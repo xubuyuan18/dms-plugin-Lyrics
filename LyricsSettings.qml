@@ -74,16 +74,16 @@ PluginSettings {
             }
 
             ToggleSetting {
-                settingKey: "lrclibEnabled"
-                label: "lrclib.net"
-                description: "开源歌词库，支持同步歌词"
+                settingKey: "neteaseEnabled"
+                label: "网易云音乐"
+                description: "优先使用，对中文歌曲支持更好"
                 defaultValue: true
             }
 
             ToggleSetting {
-                settingKey: "neteaseEnabled"
-                label: "网易云音乐"
-                description: "通过搜索 API 获取歌词"
+                settingKey: "lrclibEnabled"
+                label: "lrclib.net"
+                description: "开源歌词库，作为网易云的后备源"
                 defaultValue: true
             }
         }

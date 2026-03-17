@@ -285,11 +285,17 @@ PluginComponent {
         var capturedArtist = currentArtist;
 
         function _startFetch() {
-            _fetchFromLrclib(capturedTitle, capturedArtist);
+            // 优先使用网易云 API（对中文歌支持更好）
+            if (neteaseEnabled) {
+                _fetchFromNetease(capturedTitle, capturedArtist);
+            } else {
+                lrclibStatus = status.skippedConfig;
+                _fetchFromLrclib(capturedTitle, capturedArtist);
+            }
         }
 
-        function _fetchFromNeteaseFallback(title, artist) {
-            _fetchFromNetease(title, artist);
+        function _fetchFromLrclibFallback(title, artist) {
+            _fetchFromLrclib(title, artist);
         }
 
         // 如果启用了自定义 API，优先尝试
@@ -989,14 +995,14 @@ PluginComponent {
         id: apiIndicators
         spacing: 8
 
-        // 缓存指示器 - 带图标的圆角矩形
+        // 网易云指示器 - 带图标的圆角矩形（优先显示）
         Rectangle {
             width: 56
             height: 24
             radius: 12
-            color: root._apiStatusColor(root.cacheStatus)
+            color: root._apiStatusColor(root.neteaseStatus)
             opacity: 0.15
-            border.color: root._apiStatusColor(root.cacheStatus)
+            border.color: root._apiStatusColor(root.neteaseStatus)
             border.width: 1
 
             Row {
@@ -1004,26 +1010,26 @@ PluginComponent {
                 spacing: 4
 
                 DankIcon {
-                    name: "storage"
+                    name: "cloud"
                     size: 14
-                    color: root._apiStatusColor(root.cacheStatus)
+                    color: root._apiStatusColor(root.neteaseStatus)
                     anchors.verticalCenter: parent.verticalCenter
                 }
 
                 StyledText {
-                    text: "缓存"
+                    text: "网易"
                     font.pixelSize: 11
-                    color: root._apiStatusColor(root.cacheStatus)
+                    color: root._apiStatusColor(root.neteaseStatus)
                     anchors.verticalCenter: parent.verticalCenter
                 }
             }
 
-            ToolTip.text: root.chipLabel(root.cacheStatus)
-            ToolTip.visible: cacheMouse.containsMouse
+            ToolTip.text: root.chipLabel(root.neteaseStatus)
+            ToolTip.visible: neteaseMouse.containsMouse
             ToolTip.delay: 500
 
             MouseArea {
-                id: cacheMouse
+                id: neteaseMouse
                 anchors.fill: parent
                 hoverEnabled: true
             }
@@ -1069,14 +1075,14 @@ PluginComponent {
             }
         }
 
-        // 网易云指示器 - 带图标的圆角矩形
+        // 缓存指示器 - 带图标的圆角矩形
         Rectangle {
             width: 56
             height: 24
             radius: 12
-            color: root._apiStatusColor(root.neteaseStatus)
+            color: root._apiStatusColor(root.cacheStatus)
             opacity: 0.15
-            border.color: root._apiStatusColor(root.neteaseStatus)
+            border.color: root._apiStatusColor(root.cacheStatus)
             border.width: 1
 
             Row {
@@ -1084,26 +1090,26 @@ PluginComponent {
                 spacing: 4
 
                 DankIcon {
-                    name: "cloud"
+                    name: "storage"
                     size: 14
-                    color: root._apiStatusColor(root.neteaseStatus)
+                    color: root._apiStatusColor(root.cacheStatus)
                     anchors.verticalCenter: parent.verticalCenter
                 }
 
                 StyledText {
-                    text: "网易"
+                    text: "缓存"
                     font.pixelSize: 11
-                    color: root._apiStatusColor(root.neteaseStatus)
+                    color: root._apiStatusColor(root.cacheStatus)
                     anchors.verticalCenter: parent.verticalCenter
                 }
             }
 
-            ToolTip.text: root.chipLabel(root.neteaseStatus)
-            ToolTip.visible: neteaseMouse.containsMouse
+            ToolTip.text: root.chipLabel(root.cacheStatus)
+            ToolTip.visible: cacheMouse.containsMouse
             ToolTip.delay: 500
 
             MouseArea {
-                id: neteaseMouse
+                id: cacheMouse
                 anchors.fill: parent
                 hoverEnabled: true
             }

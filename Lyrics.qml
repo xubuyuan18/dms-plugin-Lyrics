@@ -548,7 +548,14 @@ PluginComponent {
         // 只使用歌曲名字搜索，不包含艺术家
         var searchUrl = "http://music.163.com/api/search/get/web?csrf_token=&hlpretag=&hlposttag=&s=" + encodeURIComponent(expectedTitle) + "&type=1&offset=0&total=true&limit=2";
 
-        root._cancelActiveFetch = _xhrGet(searchUrl, 15000, function (responseText, httpStatus) {
+        // 使用自定义请求头，避免 HTTP 被阻止
+        var customHeaders = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Accept": "application/json, text/plain, */*",
+            "Referer": "http://music.163.com/"
+        };
+        
+        root._cancelActiveFetch = _xhrRequest(searchUrl, "GET", 15000, function (responseText, httpStatus) {
             // Guard: track may have changed
             if (expectedTitle !== root._lastFetchedTrack || expectedArtist !== root._lastFetchedArtist)
                 return;
@@ -600,7 +607,7 @@ PluginComponent {
             root.neteaseStatus = status.error;
             root._setFinalNotFound(status.error);
             console.warn("[Lyrics] 网易云: 搜索请求失败 — " + errMsg);
-        });
+        }, customHeaders);
     }
 
     function _fetchNeteaseLyrics(songId, expectedTitle, expectedArtist, matchedName, matchedArtist) {
@@ -1593,13 +1600,6 @@ PluginComponent {
         }
     }
 
-    // ============================================
-    // 弹出窗口尺寸设置
-    // ============================================
-    // 设计说明：
-    // - 宽度：420px，适合显示歌曲信息
-    // - 高度：360px，增加空间让组件自然下沉
-    // ============================================
     popoutWidth: 420
     popoutHeight: 300
 

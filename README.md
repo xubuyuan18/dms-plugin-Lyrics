@@ -15,7 +15,7 @@
 - 🎛️ **播放控制** - 上一首/播放/暂停/下一首
 
 ## 截图
-<img width="583" height="898" alt="Lyrics Plugin" src="https://github.com/user-attachments/assets/9e022667-a895-49c5-91b5-d80afc667404" />
+<img width="656" height="498" alt="Screenshot from 2026-03-18 00-06-22" src="https://github.com/user-attachments/assets/327ea1a2-5aab-469a-983f-b59f4f13118e" />
 
 
 

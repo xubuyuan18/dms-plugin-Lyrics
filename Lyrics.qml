@@ -1283,9 +1283,8 @@ PluginComponent {
                                                 const timeStr = minutes + ":" + (seconds < 10 ? "0" : "") + seconds;
                                                 return timeStr;
                                             }
-                                            font.pixelSize: Theme.fontSizeMedium
-                                            font.weight: Font.Medium
-                                            color: Theme.surfaceText
+                                            font.pixelSize: Theme.fontSizeSmall - 1
+                                            color: Theme.surfaceVariantText
                                         }
 
                                         Item { width: parent.width - _currentTime.implicitWidth - _endTime.implicitWidth; height: 1 }
@@ -1300,9 +1299,8 @@ PluginComponent {
                                                 const seconds = Math.floor(dur % 60);
                                                 return minutes + ":" + (seconds < 10 ? "0" : "") + seconds;
                                             }
-                                            font.pixelSize: Theme.fontSizeMedium
-                                            font.weight: Font.Medium
-                                            color: Theme.surfaceText
+                                            font.pixelSize: Theme.fontSizeSmall - 1
+                                            color: Theme.surfaceVariantText
                                         }
                                     }
 
@@ -1525,7 +1523,7 @@ PluginComponent {
     // - 高度：360px，增加空间让组件自然下沉
     // ============================================
     popoutWidth: 420
-    popoutHeight: 360
+    popoutHeight: 300
 
     Component.onCompleted: {
         console.info("[Lyrics] 插件已加载");

@@ -70,6 +70,8 @@ PluginComponent {
     property bool lyricsLoading: lyricStatus === lyricState.loading
     property string _lastFetchedTrack: ""
     property string _lastFetchedArtist: ""
+    property string _lastSyncedTrack: ""
+    property string _lastSyncedArtist: ""
     property var _cancelActiveFetch: null
 
     // Chip status properties
@@ -123,6 +125,8 @@ PluginComponent {
         cacheStatus = status.none;
         lyricStatus = lyricState.loading;
         lyricSource = lyricSrc.none;
+        // 注意：不重置 _lastFetchedTrack 和 _lastFetchedArtist
+        // 这样可以在 fetchLyricsIfNeeded 中判断是否需要重新搜索
     }
 
     // Sets the final "no synced lyrics" state after all sources exhausted
@@ -259,7 +263,7 @@ PluginComponent {
             return;
         // 只有当歌曲相同且已找到歌词时才跳过搜索
         // 这样未找到歌词的歌曲重新播放时会再次尝试搜索
-        if (currentTitle === _lastFetchedTrack && currentArtist === _lastFetchedArtist && lyricStatus === lyricState.synced)
+        if (currentTitle === _lastSyncedTrack && currentArtist === _lastSyncedArtist)
             return;
 
         // Cancel any in-flight XHR before starting fresh
@@ -305,6 +309,8 @@ PluginComponent {
                     root.cacheStatus = status.cacheHit;
                     root.lrclibStatus = status.skippedFound;
                     root.neteaseStatus = status.skippedFound;
+                    root._lastSyncedTrack = capturedTitle;
+                    root._lastSyncedArtist = capturedArtist;
                     console.info("[Lyrics] ✓ 缓存: 已加载 \"" + capturedTitle + "\" 的歌词 (" + cached.lines.length + " 行)");
                     return;
                 }
@@ -476,6 +482,8 @@ PluginComponent {
                     root.lrclibStatus = status.found;
                     root.lyricStatus = lyricState.synced;
                     root.lyricSource = lyricSrc.lrclib;
+                    root._lastSyncedTrack = expectedTitle;
+                    root._lastSyncedArtist = expectedArtist;
                     console.info("[Lyrics] ✓ lrclib: 已找到同步歌词 (" + root.lyricsLines.length + " 行) - \"" + expectedTitle + "\"");
                     root._cancelActiveFetch = null;
                     if (root.cachingEnabled)
@@ -661,6 +669,8 @@ PluginComponent {
                 root.neteaseStatus = status.found;
                 root.lyricStatus = lyricState.synced;
                 root.lyricSource = lyricSrc.netease;
+                root._lastSyncedTrack = expectedTitle;
+                root._lastSyncedArtist = expectedArtist;
                 console.info("[Lyrics] ✓ 网易云: 已找到同步歌词 (" + lines.length + " 行) - \"" + expectedTitle + "\" (匹配: \"" + matchedName + "\" - " + matchedArtist + ")");
                 root._cancelActiveFetch = null;
                 if (root.cachingEnabled)

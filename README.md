@@ -4,14 +4,14 @@
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![DMS](https://img.shields.io/badge/DankMaterialShell-1.4+-purple)
 
-一个功能强大的音乐歌词插件，为 [DankMaterialShell](https://danklinux.com/) 提供实时同步歌词显示。
+一个还在开发中的的音乐歌词插件，为 [DankMaterialShell](https://danklinux.com/) 提供实时同步歌词显示。
 
 ## 功能特性
 
 - 🎵 **多源歌词获取** - 支持从 lrclib.net、网易云音乐等多个来源获取歌词
 - 🔄 **实时同步** - 根据 MPRIS 播放进度自动高亮当前歌词行
 - 💾 **本地缓存** - 自动缓存下载的歌词，加快后续加载速度
-- 🎨 **精美 UI** - macOS 风格进度条，圆形专辑封面，现代化设计
+- 🎨 **精美 UI** - macOS风格进度条，圆形专辑封面，现代化设计
 - 🎛️ **播放控制** - 支持上一首/播放/暂停/下一首控制
 - 📱 **双栏适配** - 完美适配横向和纵向 DankBar
 - 🔍 **智能匹配** - 自动匹配歌曲信息，支持模糊搜索
@@ -55,7 +55,7 @@ dms ipc call plugins reload musicLyrics
 
 ### 弹出面板
 
-点击 Bar 上的插件图标打开弹出面板（420×300px），包含：
+点击 Bar 上的插件图标打开弹出面板，包含：
 
 - 🎵 **当前播放** - 歌曲名、艺术家、专辑信息
 - 🖼️ **专辑封面** - 大尺寸圆形封面
@@ -71,9 +71,37 @@ dms ipc call plugins reload musicLyrics
 
 插件按以下优先级获取歌词：
 
-1. **本地缓存** - 如果已缓存直接加载（缓存命中）
-2. **lrclib.net** - 开源歌词库，支持同步歌词
-3. **网易云音乐** - 通过搜索 API + paugram API 获取歌词
+1. **自定义 API**（如果启用）- 优先使用用户配置的自定义 API
+2. **本地缓存** - 如果已缓存直接加载（缓存命中）
+3. **lrclib.net** - 开源歌词库，支持同步歌词
+4. **网易云音乐** - 通过搜索 API + paugram API 获取歌词
+
+### 自定义 API
+
+你可以在设置中启用自定义歌词 API。当启用后，插件会优先尝试从自定义 API 获取歌词，失败时自动回退到内置源。
+
+**配置项：**
+- **启用自定义 API** - 开关自定义 API 功能
+- **API 地址** - 自定义 API 的 URL，支持以下变量：
+  - `{title}` - 歌曲标题
+  - `{artist}` - 艺术家
+  - `{album}` - 专辑名
+
+**示例 API 地址：**
+```
+https://api.example.com/lyrics?title={title}&artist={artist}
+https://lyrics.example.com/search?q={title}+{artist}
+```
+
+**API 响应格式：**
+自定义 API 应返回 JSON 格式，支持以下字段（按优先级）：
+- `lyrics` - LRC 格式歌词
+- `lyric` - LRC 格式歌词
+- `lrc` - LRC 格式歌词
+- `content` - LRC 格式歌词
+- `data` - LRC 格式歌词
+
+如果返回的歌词不是 LRC 格式，插件会将其作为纯文本处理（所有行时间设为 0）。
 
 ## 技术细节
 

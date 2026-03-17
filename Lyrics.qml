@@ -11,6 +11,8 @@ PluginComponent {
     id: root
 
     property bool cachingEnabled: pluginData.cachingEnabled ?? true
+    property bool customApiEnabled: pluginData.customApiEnabled ?? false
+    property string customApiUrl: pluginData.customApiUrl ?? ""
 
     readonly property MprisPlayer activePlayer: MprisController.activePlayer
     property var allPlayers: MprisController.availablePlayers
@@ -52,6 +54,7 @@ PluginComponent {
         readonly property int lrclib: 1
         readonly property int cache: 2
         readonly property int netease: 3
+        readonly property int custom: 4
     }
 
     // -------------------------------------------------------------------------
@@ -275,6 +278,12 @@ PluginComponent {
 
         function _fetchFromNeteaseFallback(title, artist) {
             _fetchFromNetease(title, artist);
+        }
+
+        // 如果启用了自定义 API，优先尝试
+        if (customApiEnabled && customApiUrl) {
+            _fetchFromCustomApi(capturedTitle, capturedArtist);
+            return;
         }
 
         if (cachingEnabled) {
@@ -598,6 +607,104 @@ PluginComponent {
             root._setFinalNotFound(status.error);
             console.warn("[Lyrics] 网易云: 歌词请求失败 — " + errMsg);
         });
+    }
+
+    // -------------------------------------------------------------------------
+    // Custom API fetch
+    // -------------------------------------------------------------------------
+
+    function _fetchFromCustomApi(expectedTitle, expectedArtist) {
+        console.info("[Lyrics] 自定义API: 正在获取 \"" + expectedTitle + "\" - " + expectedArtist);
+
+        // 替换 URL 中的变量
+        var url = customApiUrl
+            .replace(/{title}/g, encodeURIComponent(expectedTitle))
+            .replace(/{artist}/g, encodeURIComponent(expectedArtist))
+            .replace(/{album}/g, encodeURIComponent(currentAlbum || ""));
+
+        console.info("[Lyrics] 自定义API: 请求 URL: " + url);
+
+        root._cancelActiveFetch = _xhrGet(url, 20000, function (responseText, httpStatus) {
+            var rawData = (responseText || "").trim();
+            console.log("[Lyrics] 自定义API: response length = " + rawData.length);
+
+            if (rawData.length === 0) {
+                console.warn("[Lyrics] 自定义API: 空响应，回退到内置源");
+                _fetchFromCacheOrBuiltin(expectedTitle, expectedArtist);
+                return;
+            }
+
+            try {
+                var result = JSON.parse(rawData);
+
+                // 支持多种响应格式
+                var lyricText = result.lyrics || result.lyric || result.lrc || result.content || result.data;
+
+                if (!lyricText || lyricText.trim() === "") {
+                    console.warn("[Lyrics] 自定义API: 响应中无歌词，回退到内置源");
+                    _fetchFromCacheOrBuiltin(expectedTitle, expectedArtist);
+                    return;
+                }
+
+                var lines = root.parseLrc(lyricText);
+                if (lines.length === 0) {
+                    // 尝试将纯文本转换为歌词格式
+                    var plainLines = lyricText.split("\n").map(function(line) {
+                        return { time: 0, text: line.trim() };
+                    }).filter(function(l) { return l.text !== ""; });
+
+                    if (plainLines.length > 0) {
+                        lines = plainLines;
+                    }
+                }
+
+                if (lines.length === 0) {
+                    console.warn("[Lyrics] 自定义API: 解析失败，回退到内置源");
+                    _fetchFromCacheOrBuiltin(expectedTitle, expectedArtist);
+                    return;
+                }
+
+                root.lyricsLines = lines;
+                root.lyricStatus = lyricState.synced;
+                root.lyricSource = lyricSrc.custom;
+                console.info("[Lyrics] ✓ 自定义API: 已找到歌词 (" + lines.length + " 行) - \"" + expectedTitle + "\"");
+                root._cancelActiveFetch = null;
+
+                if (root.cachingEnabled)
+                    root.writeToCache(expectedTitle, expectedArtist, lines, lyricSrc.custom);
+
+            } catch (e) {
+                console.warn("[Lyrics] 自定义API: 解析失败 — " + e);
+                console.warn("[Lyrics] 自定义API: 原始数据: " + rawData.substring(0, 200));
+                _fetchFromCacheOrBuiltin(expectedTitle, expectedArtist);
+            }
+        }, function (errMsg) {
+            console.warn("[Lyrics] 自定义API: 请求失败 — " + errMsg + "，回退到内置源");
+            _fetchFromCacheOrBuiltin(expectedTitle, expectedArtist);
+        });
+    }
+
+    function _fetchFromCacheOrBuiltin(title, artist) {
+        // 回退到缓存或内置源
+        if (cachingEnabled) {
+            readFromCache(title, artist, function (cached) {
+                if (cached && cached.lines && cached.lines.length > 0) {
+                    root.lyricsLines = cached.lines;
+                    root.lyricStatus = lyricState.synced;
+                    root.lyricSource = cached.source > 0 ? cached.source : lyricSrc.cache;
+                    root.cacheStatus = status.cacheHit;
+                    root.lrclibStatus = status.skippedFound;
+                    root.neteaseStatus = status.skippedFound;
+                    console.info("[Lyrics] ✓ 缓存: 已加载 \"" + title + "\" 的歌词 (" + cached.lines.length + " 行)");
+                    return;
+                }
+                root.cacheStatus = status.cacheMiss;
+                _fetchFromLrclib(title, artist);
+            });
+        } else {
+            cacheStatus = status.cacheDisabled;
+            _fetchFromLrclib(title, artist);
+        }
     }
 
     // -------------------------------------------------------------------------

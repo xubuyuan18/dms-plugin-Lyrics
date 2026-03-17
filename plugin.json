@@ -1,0 +1,12 @@
+{
+  "id": "musicLyrics",
+  "name": "Music Lyrics",
+  "description": "从多个来源显示同步音乐歌词",
+  "version": "1.5.0",
+  "author": "gasiyu",
+  "icon": "lyrics",
+  "type": "widget",
+  "component": "./MusicLyrics.qml",
+  "settings": "./MusicLyricsSettings.qml",
+  "permissions": ["settings_read", "settings_write", "process", "network"]
+}

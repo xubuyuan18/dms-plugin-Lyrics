@@ -20,9 +20,7 @@
 
 ![Plugin Screenshot](./screenshots.png)
 
-## 安装
-
-### 方法 1：手动安装
+## 安装 手动安装
 
 1. 克隆仓库到 DMS 插件目录：
 
@@ -31,18 +29,10 @@ cd ~/.config/DankMaterialShell/plugins
 git clone https://github.com/xubuyuan18/dms-plugin-Lyrics.git musicLyrics
 ```
 
-2. 重启 DankMaterialShell 或热重载插件：
-
+2. 重启 DankMaterialShell 或热重载插件后将组件添加到bar上：
 ```bash
 dms ipc call plugins reload musicLyrics
 ```
-
-### 方法 2：通过 DMS 设置
-
-1. 打开 DankMaterialShell 设置
-2. 进入 Plugins → Scan for Plugins
-3. 找到 "Lyrics" 并启用
-4. 将插件添加到 DankBar
 
 ## 配置
 
@@ -119,23 +109,6 @@ musicLyrics/
 - `lyricState`: idle(0), loading(1), synced(2), notFound(3)
 - `lyricSrc`: none(0), lrclib(1), cache(2), netease(3)
 - `status`: none(0), searching(1), found(2), notFound(3), error(4), skippedConfig(5), skippedFound(6), skippedPlain(7), cacheHit(8), cacheMiss(9), cacheDisabled(10)
-
-## 更新日志
-
-### v1.5.0
-- ✨ 新增 macOS 风格进度条（支持点击跳转）
-- ✨ 增大专辑封面尺寸（Bar 36px，弹出面板 200px）
-- ✨ 优化中文字体显示
-- ✨ 添加播放控制按钮（上一首/播放/暂停/下一首）
-- ✨ 添加歌词来源状态显示芯片
-- 🐛 修复歌词同步精度问题
-
-### v1.4.0
-- ✨ 添加网易云音乐歌词源
-- ✨ 实现本地缓存功能（FNV-1a 哈希命名）
-- ✨ 添加 XHR 超时和重试机制
-- ✨ 添加防抖动处理（debounce）
-
 ## 贡献
 
 欢迎提交 Issue 和 Pull Request！

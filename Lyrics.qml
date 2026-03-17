@@ -135,6 +135,8 @@ PluginComponent {
         neteaseStatus = sourceStatusVal;
         lyricStatus = lyricState.notFound;
         root._cancelActiveFetch = null;
+        // 注意：不重置 _lastFetchedTrack，这样再次播放同一首歌时
+        // fetchLyricsIfNeeded 会检查到歌曲相同但状态是 notFound，从而允许重新搜索
     }
 
     // -------------------------------------------------------------------------
@@ -261,9 +263,9 @@ PluginComponent {
     function fetchLyricsIfNeeded() {
         if (!currentTitle)
             return;
-        // 只有当歌曲相同且已找到歌词时才跳过搜索
-        // 这样未找到歌词的歌曲重新播放时会再次尝试搜索
-        if (currentTitle === _lastSyncedTrack && currentArtist === _lastSyncedArtist)
+        // 修复：如果歌曲相同且已找到歌词，则跳过搜索
+        // 如果歌曲相同但之前没找到歌词（notFound），则允许重新搜索
+        if (currentTitle === _lastFetchedTrack && currentArtist === _lastFetchedArtist && lyricStatus !== lyricState.notFound)
             return;
 
         // Cancel any in-flight XHR before starting fresh

@@ -1256,7 +1256,7 @@ PluginComponent {
                                 // Spacer to ensure vertical separation from cover art
                                 Item {
                                     width: 1
-                                    height: _coverArtContainer.visible ? 20 : 0
+                                    height: _coverArtContainer.visible ? 8 : 0
                                 }
 
                                 // Progress bar with timestamps

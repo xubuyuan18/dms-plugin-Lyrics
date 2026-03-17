@@ -1,4 +1,4 @@
-# Lyrics Plugin for DankMaterialShell
+<img width="583" height="898" alt="Lyrics Plugin" src="https://github.com/user-attachments/assets/e2d4f838-42ad-4e18-9576-63206e7982ef" /># Lyrics Plugin for DankMaterialShell
 
 ![Version](https://img.shields.io/badge/version-1.5.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
@@ -15,8 +15,10 @@
 - 🎛️ **播放控制** - 上一首/播放/暂停/下一首
 
 ## 截图
+<img width="583" height="898" alt="Lyrics Plugin" src="https://github.com/user-attachments/assets/9e022667-a895-49c5-91b5-d80afc667404" />
 
-![截图](./Lyrics Plugin.png)
+
+
 
 ## 安装
 

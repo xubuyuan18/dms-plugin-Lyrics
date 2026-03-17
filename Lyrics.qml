@@ -1195,14 +1195,14 @@ PluginComponent {
                                     // ============================================
                                     // 设计说明：
                                     // - 宽度：与父容器对齐，占满可用空间
-                                    // - 轨道高度：12px，较粗的视觉效果
-                                    // - 中间圆点：比轨道稍大（16px），突出显示当前位置
+                                    // - 轨道高度：16px，较粗的视觉效果
+                                    // - 中间圆点：比轨道稍大（20px），突出显示当前位置
                                     // - 点击/拖动：支持跳转播放位置
                                     // ============================================
                                     Item {
                                         id: macProgressBar
                                         width: parent.width
-                                        height: 24
+                                        height: 32
                                         anchors.horizontalCenter: parent.horizontalCenter
 
                                         property real progress: {
@@ -1210,12 +1210,12 @@ PluginComponent {
                                             return Math.min(1, (root.activePlayer.position || 0) / root.activePlayer.length);
                                         }
 
-                                        // Background track - 轨道背景（12px 高度）
+                                        // Background track - 轨道背景（16px 高度）
                                         Rectangle {
                                             anchors.verticalCenter: parent.verticalCenter
                                             width: parent.width
-                                            height: 12
-                                            radius: 6
+                                            height: 16
+                                            radius: 8
                                             color: Theme.surfaceContainerHighest
                                         }
 
@@ -1224,19 +1224,19 @@ PluginComponent {
                                             anchors.verticalCenter: parent.verticalCenter
                                             anchors.left: parent.left
                                             width: parent.width * macProgressBar.progress
-                                            height: 12
-                                            radius: 6
+                                            height: 16
+                                            radius: 8
                                             color: Theme.primary
                                         }
 
-                                        // Progress handle - 进度圆点（16px，比轨道稍大）
+                                        // Progress handle - 进度圆点（20px，比轨道稍大）
                                         Rectangle {
                                             id: progressHandle
                                             anchors.verticalCenter: parent.verticalCenter
                                             x: (parent.width - width) * macProgressBar.progress
-                                            width: 16
-                                            height: 16
-                                            radius: 8
+                                            width: 20
+                                            height: 20
+                                            radius: 10
                                             color: Theme.surface
                                             border.color: Theme.outlineVariant
                                             border.width: 1
@@ -1284,8 +1284,9 @@ PluginComponent {
                                                 const timeStr = minutes + ":" + (seconds < 10 ? "0" : "") + seconds;
                                                 return timeStr;
                                             }
-                                            font.pixelSize: Theme.fontSizeSmall - 1
-                                            color: Theme.surfaceVariantText
+                                            font.pixelSize: Theme.fontSizeMedium
+                                            font.weight: Font.Medium
+                                            color: Theme.surfaceText
                                         }
 
                                         Item { width: parent.width - _currentTime.implicitWidth - _endTime.implicitWidth; height: 1 }
@@ -1300,8 +1301,9 @@ PluginComponent {
                                                 const seconds = Math.floor(dur % 60);
                                                 return minutes + ":" + (seconds < 10 ? "0" : "") + seconds;
                                             }
-                                            font.pixelSize: Theme.fontSizeSmall - 1
-                                            color: Theme.surfaceVariantText
+                                            font.pixelSize: Theme.fontSizeMedium
+                                            font.weight: Font.Medium
+                                            color: Theme.surfaceText
                                         }
                                     }
 

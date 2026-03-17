@@ -155,7 +155,7 @@ PluginComponent {
         return _fnv1a32((title + "\x00" + artist).toLowerCase());
     }
 
-    readonly property string _cacheDir: (Quickshell.env("HOME") || "") + "/.cache/musicLyrics"
+    readonly property string _cacheDir: (Quickshell.env("HOME") || "") + "/.cache/Lyrics"
 
     function _cacheFilePath(title, artist) {
         return _cacheDir + "/" + _cacheKey(title, artist) + ".json";

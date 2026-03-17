@@ -47,7 +47,7 @@ PluginSettings {
             ToggleSetting {
                 settingKey: "cachingEnabled"
                 label: "本地缓存"
-                description: "将下载的歌词保存在本地，加快加载速度并减少网络请求。歌词文件将存储在 ~/.cache/musicLyrics 目录下。"
+                description: "将下载的歌词保存在本地，加快加载速度并减少网络请求。歌词文件将存储在 ~/.cache/Lyrics 目录下。"
                 defaultValue: true
             }
         }

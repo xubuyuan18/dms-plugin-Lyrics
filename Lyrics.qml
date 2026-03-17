@@ -1231,7 +1231,8 @@ PluginComponent {
                                         Rectangle {
                                             id: progressHandle
                                             anchors.verticalCenter: parent.verticalCenter
-                                            x: (parent.width - width) * macProgressBar.progress
+                                            // 圆点中心与进度填充的右边缘对齐
+                                            x: parent.width * macProgressBar.progress - width / 2
                                             width: 20
                                             height: 20
                                             radius: 10

@@ -257,7 +257,9 @@ PluginComponent {
     function fetchLyricsIfNeeded() {
         if (!currentTitle)
             return;
-        if (currentTitle === _lastFetchedTrack && currentArtist === _lastFetchedArtist)
+        // 只有当歌曲相同且已找到歌词时才跳过搜索
+        // 这样未找到歌词的歌曲重新播放时会再次尝试搜索
+        if (currentTitle === _lastFetchedTrack && currentArtist === _lastFetchedArtist && lyricStatus === lyricState.synced)
             return;
 
         // Cancel any in-flight XHR before starting fresh

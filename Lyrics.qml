@@ -1207,24 +1207,24 @@ PluginComponent {
                                     visible: root.activePlayer
                                 }
 
-                                // Artist & Album - 放大字体，优化布局
+                                // Artist & Album - 字体跟随歌词字体设置
                                 Column {
                                     width: parent.width
-                                    spacing: 4  // 增加行间距
+                                    spacing: 4
                                     visible: root.activePlayer
 
                                     Row {
-                                        spacing: Theme.spacingS  // 增加图标和文字间距
+                                        spacing: Theme.spacingS
                                         DankIcon {
                                             name: "person"
-                                            size: 16  // 放大图标
+                                            size: 16
                                             color: Theme.surfaceVariantText
                                             anchors.verticalCenter: parent.verticalCenter
                                         }
                                         StyledText {
                                             text: root.currentArtist || "未知艺术家"
-                                            font.pixelSize: Theme.fontSizeMedium + 2  // 放大字体
-                                            font.weight: Font.Medium  // 加粗
+                                            font.pixelSize: pluginData.lyricsFontSize || Theme.fontSizeMedium + 2
+                                            font.weight: Font.Medium
                                             color: Theme.surfaceText
                                             anchors.verticalCenter: parent.verticalCenter
                                             maximumLineCount: 1
@@ -1233,18 +1233,18 @@ PluginComponent {
                                     }
 
                                     Row {
-                                        spacing: Theme.spacingS  // 增加图标和文字间距
+                                        spacing: Theme.spacingS
                                         visible: root.currentAlbum !== ""
                                         DankIcon {
                                             name: "album"
-                                            size: 16  // 放大图标
+                                            size: 16
                                             color: Theme.surfaceVariantText
                                             anchors.verticalCenter: parent.verticalCenter
                                         }
                                         StyledText {
                                             text: root.currentAlbum
-                                            font.pixelSize: Theme.fontSizeMedium  // 放大字体
-                                            font.weight: Font.Medium  // 加粗
+                                            font.pixelSize: pluginData.lyricsFontSize || Theme.fontSizeMedium
+                                            font.weight: Font.Medium
                                             color: Theme.surfaceVariantText
                                             anchors.verticalCenter: parent.verticalCenter
                                             maximumLineCount: 1

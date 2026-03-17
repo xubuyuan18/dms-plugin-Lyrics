@@ -332,12 +332,13 @@ PluginComponent {
     // XMLHttpRequest helper
     // -------------------------------------------------------------------------
 
-    function _xhrGet(url, timeoutMs, onSuccess, onError, customHeaders) {
+    function _xhrRequest(url, method, timeoutMs, onSuccess, onError, customHeaders, postData) {
         var retriesLeft = 2;
         var retryDelay = 3000;
         var attempt = 0;
         var cancelled = false;
         var currentXhr = null;
+        var httpMethod = method || "GET";
 
         function _attempt() {
             attempt++;
@@ -371,15 +372,22 @@ PluginComponent {
                 }
                 onSuccess(currentXhr.responseText, currentXhr.status);
             };
-            currentXhr.open("GET", url);
+            currentXhr.open(httpMethod, url);
             if (customHeaders) {
                 for (var key in customHeaders)
                     currentXhr.setRequestHeader(key, customHeaders[key]);
             } else {
-                currentXhr.setRequestHeader("User-Agent", "DankMaterialShell MusicLyrics/1.4.0 (https://github.com/Gasiyu/dms-plugin-musiclyrics)");
+                currentXhr.setRequestHeader("User-Agent", "DankMaterialShell Lyrics/1.5.0 (https://github.com/xubuyuan18/dms-plugin-Lyrics)");
                 currentXhr.setRequestHeader("Accept", "application/json");
             }
-            currentXhr.send();
+            
+            // 发送请求
+            if (httpMethod === "POST" && postData) {
+                currentXhr.setRequestHeader("Content-Type", "application/json");
+                currentXhr.send(JSON.stringify(postData));
+            } else {
+                currentXhr.send();
+            }
         }
 
         function _retry(errMsg) {
@@ -387,7 +395,7 @@ PluginComponent {
                 return;
             if (retriesLeft > 0) {
                 retriesLeft--;
-                console.warn("[Lyrics] _xhrGet: " + errMsg + " — retrying (attempt " + (attempt + 1) + ", " + retriesLeft + " left): " + url);
+                console.warn("[Lyrics] _xhrRequest: " + errMsg + " — retrying (attempt " + (attempt + 1) + ", " + retriesLeft + " left): " + url);
                 xhrRetryTimer.stop();
                 xhrRetryTimer.interval = retryDelay;
                 xhrRetryTimer.onRetry = _attempt;
@@ -408,6 +416,11 @@ PluginComponent {
                 currentXhr.abort();
             console.info("[Lyrics] ⊘ XHR cancelled: " + url);
         };
+    }
+
+    // 兼容旧代码的 GET 请求辅助函数
+    function _xhrGet(url, timeoutMs, onSuccess, onError, customHeaders) {
+        return _xhrRequest(url, "GET", timeoutMs, onSuccess, onError, customHeaders, null);
     }
 
     // -------------------------------------------------------------------------
@@ -670,10 +683,17 @@ PluginComponent {
         console.info("[Lyrics] 自定义API: 请求 URL: " + url);
         console.info("[Lyrics] 自定义API: 请求方法: " + customApiMethod);
 
-        // 根据请求方法处理
-        var isPost = customApiMethod === "POST";
+        // 准备 POST 数据（如果是 POST 请求）
+        var postData = null;
+        if (customApiMethod === "POST") {
+            postData = {
+                title: expectedTitle,
+                artist: expectedArtist,
+                album: currentAlbum || ""
+            };
+        }
 
-        root._cancelActiveFetch = _xhrGet(url, 20000, function (responseText, httpStatus) {
+        root._cancelActiveFetch = _xhrRequest(url, customApiMethod, 20000, function (responseText, httpStatus) {
             var rawData = (responseText || "").trim();
             console.log("[Lyrics] 自定义API: response length = " + rawData.length);
 

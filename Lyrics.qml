@@ -233,11 +233,11 @@ PluginComponent {
             blockWrites: false
             atomicWrites: true
             onSaved: {
-                console.info("[MusicLyrics] 缓存: 已保存 \"" + cTitle + "\" 的歌词 (" + path + ")");
+                console.info("[Lyrics] 缓存: 已保存 \"" + cTitle + "\" 的歌词 (" + path + ")");
                 destroy();
             }
             onSaveFailed: {
-                console.warn("[MusicLyrics] 缓存: 保存失败 \"" + cTitle + "\"");
+                console.warn("[Lyrics] 缓存: 保存失败 \"" + cTitle + "\"");
                 destroy();
             }
         }
@@ -264,7 +264,7 @@ PluginComponent {
         _resetLyricsState();
 
         var durationStr = currentDuration > 0 ? (Math.floor(currentDuration / 60) + ":" + ("0" + Math.floor(currentDuration % 60)).slice(-2)) : "未知";
-        console.info("[MusicLyrics] ▶ 歌曲切换: \"" + currentTitle + "\" - " + currentArtist + (currentAlbum ? " [" + currentAlbum + "]" : "") + " (" + durationStr + ")");
+        console.info("[Lyrics] ▶ 歌曲切换: \"" + currentTitle + "\" - " + currentArtist + (currentAlbum ? " [" + currentAlbum + "]" : "") + " (" + durationStr + ")");
 
         var capturedTitle = currentTitle;
         var capturedArtist = currentArtist;
@@ -289,7 +289,7 @@ PluginComponent {
                     root.cacheStatus = status.cacheHit;
                     root.lrclibStatus = status.skippedFound;
                     root.neteaseStatus = status.skippedFound;
-                    console.info("[MusicLyrics] ✓ 缓存: 已加载 \"" + capturedTitle + "\" 的歌词 (" + cached.lines.length + " 行)");
+                    console.info("[Lyrics] ✓ 缓存: 已加载 \"" + capturedTitle + "\" 的歌词 (" + cached.lines.length + " 行)");
                     return;
                 }
                 root.cacheStatus = status.cacheMiss;
@@ -360,7 +360,7 @@ PluginComponent {
                 return;
             if (retriesLeft > 0) {
                 retriesLeft--;
-                console.warn("[MusicLyrics] _xhrGet: " + errMsg + " — retrying (attempt " + (attempt + 1) + ", " + retriesLeft + " left): " + url);
+                console.warn("[Lyrics] _xhrGet: " + errMsg + " — retrying (attempt " + (attempt + 1) + ", " + retriesLeft + " left): " + url);
                 xhrRetryTimer.stop();
                 xhrRetryTimer.interval = retryDelay;
                 xhrRetryTimer.onRetry = _attempt;
@@ -379,7 +379,7 @@ PluginComponent {
             xhrRetryTimer.stop();
             if (currentXhr)
                 currentXhr.abort();
-            console.info("[MusicLyrics] ⊘ XHR cancelled: " + url);
+            console.info("[Lyrics] ⊘ XHR cancelled: " + url);
         };
     }
 
@@ -390,12 +390,12 @@ PluginComponent {
     function _fetchFromLrclib(expectedTitle, expectedArtist) {
         if (lyricStatus === lyricState.synced) {
             lrclibStatus = status.skippedFound;
-            console.info("[MusicLyrics] lrclib: 已跳过 (已找到同步歌词)");
+            console.info("[Lyrics] lrclib: 已跳过 (已找到同步歌词)");
             return;
         }
 
         lrclibStatus = status.searching;
-        console.info("[MusicLyrics] lrclib: 正在搜索 \"" + expectedTitle + "\" - " + expectedArtist);
+        console.info("[Lyrics] lrclib: 正在搜索 \"" + expectedTitle + "\" - " + expectedArtist);
 
         var url = "https://lrclib.net/api/get?artist_name=" + encodeURIComponent(expectedArtist) + "&track_name=" + encodeURIComponent(expectedTitle);
         if (currentAlbum)
@@ -405,23 +405,23 @@ PluginComponent {
 
         root._cancelActiveFetch = _xhrGet(url, 20000, function (responseText, httpStatus) {
             var rawData = (responseText || "").trim();
-            console.log("[MusicLyrics] lrclib: response length = " + rawData.length);
+            console.log("[Lyrics] lrclib: response length = " + rawData.length);
             if (rawData.length === 0) {
                 root._setFinalNotFound(status.error);
-                console.warn("[MusicLyrics] lrclib: empty response (HTTP " + httpStatus + ")");
+                console.warn("[Lyrics] lrclib: empty response (HTTP " + httpStatus + ")");
                 return;
             }
             try {
                 var result = JSON.parse(rawData);
                 if (result.statusCode === 404 || result.error) {
                     root._setFinalNotFound(status.notFound);
-                    console.info("[MusicLyrics] ✗ lrclib: no lyrics found for \"" + expectedTitle + "\"");
+                    console.info("[Lyrics] ✗ lrclib: no lyrics found for \"" + expectedTitle + "\"");
                 } else if (result.syncedLyrics) {
                     root.lyricsLines = root.parseLrc(result.syncedLyrics);
                     root.lrclibStatus = status.found;
                     root.lyricStatus = lyricState.synced;
                     root.lyricSource = lyricSrc.lrclib;
-                    console.info("[MusicLyrics] ✓ lrclib: 已找到同步歌词 (" + root.lyricsLines.length + " 行) - \"" + expectedTitle + "\"");
+                    console.info("[Lyrics] ✓ lrclib: 已找到同步歌词 (" + root.lyricsLines.length + " 行) - \"" + expectedTitle + "\"");
                     root._cancelActiveFetch = null;
                     if (root.cachingEnabled)
                         root.writeToCache(expectedTitle, expectedArtist, root.lyricsLines, lyricSrc.lrclib);
@@ -435,29 +435,29 @@ PluginComponent {
                         root.lrclibStatus = status.found;
                         root.lyricStatus = lyricState.synced;
                         root.lyricSource = lyricSrc.lrclib;
-                        console.info("[MusicLyrics] ✓ lrclib: 已找到纯文本歌词 (" + plainLines.length + " 行) - \"" + expectedTitle + "\"");
+                        console.info("[Lyrics] ✓ lrclib: 已找到纯文本歌词 (" + plainLines.length + " 行) - \"" + expectedTitle + "\"");
                         root._cancelActiveFetch = null;
                         if (root.cachingEnabled)
                             root.writeToCache(expectedTitle, expectedArtist, plainLines, lyricSrc.lrclib);
                     } else {
                         root._setFinalNotFound(status.notFound);
-                        console.info("[MusicLyrics] ✗ lrclib: 纯文本歌词为空 - \"" + expectedTitle + "\"");
+                        console.info("[Lyrics] ✗ lrclib: 纯文本歌词为空 - \"" + expectedTitle + "\"");
                     }
 
                 } else {
                     root.lrclibStatus = status.notFound;
-                    console.info("[MusicLyrics] ✗ lrclib: 未找到歌词 - \"" + expectedTitle + "\"，尝试网易云...");
+                    console.info("[Lyrics] ✗ lrclib: 未找到歌词 - \"" + expectedTitle + "\"，尝试网易云...");
                     root._fetchFromNetease(expectedTitle, expectedArtist);
                 }
             } catch (e) {
                 root.lrclibStatus = status.error;
-                console.warn("[MusicLyrics] lrclib: 解析响应失败 — " + e);
-                console.warn("[MusicLyrics] lrclib: 原始数据: " + rawData.substring(0, 200));
+                console.warn("[Lyrics] lrclib: 解析响应失败 — " + e);
+                console.warn("[Lyrics] lrclib: 原始数据: " + rawData.substring(0, 200));
                 root._fetchFromNetease(expectedTitle, expectedArtist);
             }
         }, function (errMsg) {
             root.lrclibStatus = status.error;
-            console.warn("[MusicLyrics] lrclib: 请求失败 — " + errMsg);
+            console.warn("[Lyrics] lrclib: 请求失败 — " + errMsg);
             root._fetchFromNetease(expectedTitle, expectedArtist);
         });
     }
@@ -469,12 +469,12 @@ PluginComponent {
     function _fetchFromNetease(expectedTitle, expectedArtist) {
         if (lyricStatus === lyricState.synced) {
             neteaseStatus = status.skippedFound;
-            console.info("[MusicLyrics] 网易云: 已跳过 (已找到同步歌词)");
+            console.info("[Lyrics] 网易云: 已跳过 (已找到同步歌词)");
             return;
         }
 
         neteaseStatus = status.searching;
-        console.info("[MusicLyrics] 网易云: 步骤1 - 搜索歌曲ID - \"" + expectedTitle + "\" - " + expectedArtist);
+        console.info("[Lyrics] 网易云: 步骤1 - 搜索歌曲ID - \"" + expectedTitle + "\" - " + expectedArtist);
 
         // Step 1: Search song ID using Netease search API
         var searchUrl = "https://music.163.com/api/search/get/web?s=" + encodeURIComponent(expectedTitle + " " + expectedArtist) + "&type=1&limit=5";
@@ -485,10 +485,10 @@ PluginComponent {
                 return;
 
             var rawData = (responseText || "").trim();
-            console.log("[MusicLyrics] Netease: search response length = " + rawData.length);
+            console.log("[Lyrics] Netease: search response length = " + rawData.length);
             if (rawData.length === 0) {
                 root._setFinalNotFound(status.error);
-                console.warn("[MusicLyrics] Netease: empty search response (HTTP " + httpStatus + ")");
+                console.warn("[Lyrics] Netease: empty search response (HTTP " + httpStatus + ")");
                 return;
             }
 
@@ -499,7 +499,7 @@ PluginComponent {
                 if (!songs || songs.length === 0) {
                     root.neteaseStatus = status.notFound;
                     root._setFinalNotFound(status.notFound);
-                    console.info("[MusicLyrics] ✗ 网易云: 未找到歌曲 - \"" + expectedTitle + "\"");
+                    console.info("[Lyrics] ✗ 网易云: 未找到歌曲 - \"" + expectedTitle + "\"");
                     return;
                 }
 
@@ -516,7 +516,7 @@ PluginComponent {
                 var songName = matchedSong.name;
                 var artistName = matchedSong.artists?.[0]?.name || "未知";
 
-                console.info("[MusicLyrics] 网易云: 匹配到歌曲 \"" + songName + "\" - " + artistName + " (ID: " + songId + ")");
+                console.info("[Lyrics] 网易云: 匹配到歌曲 \"" + songName + "\" - " + artistName + " (ID: " + songId + ")");
                 
                 // Step 2: Fetch lyrics using paugram API with the song ID
                 root._fetchNeteaseLyrics(songId, expectedTitle, expectedArtist, songName, artistName);
@@ -524,18 +524,18 @@ PluginComponent {
             } catch (e) {
                 root.neteaseStatus = status.error;
                 root._setFinalNotFound(status.error);
-                console.warn("[MusicLyrics] 网易云: 解析搜索响应失败 — " + e);
-                console.warn("[MusicLyrics] 网易云: 原始数据: " + rawData.substring(0, 200));
+                console.warn("[Lyrics] 网易云: 解析搜索响应失败 — " + e);
+                console.warn("[Lyrics] 网易云: 原始数据: " + rawData.substring(0, 200));
             }
         }, function (errMsg) {
             root.neteaseStatus = status.error;
             root._setFinalNotFound(status.error);
-            console.warn("[MusicLyrics] 网易云: 搜索请求失败 — " + errMsg);
+            console.warn("[Lyrics] 网易云: 搜索请求失败 — " + errMsg);
         });
     }
 
     function _fetchNeteaseLyrics(songId, expectedTitle, expectedArtist, matchedName, matchedArtist) {
-        console.info("[MusicLyrics] 网易云: 步骤2 - 获取歌词 ID: " + songId);
+        console.info("[Lyrics] 网易云: 步骤2 - 获取歌词 ID: " + songId);
 
         var lyricUrl = "https://api.paugram.com/netease/?id=" + encodeURIComponent(songId);
 
@@ -545,11 +545,11 @@ PluginComponent {
                 return;
 
             var rawData = (responseText || "").trim();
-            console.log("[MusicLyrics] 网易云: 歌词响应长度 = " + rawData.length);
+            console.log("[Lyrics] 网易云: 歌词响应长度 = " + rawData.length);
             if (rawData.length === 0) {
                 root.neteaseStatus = status.error;
                 root._setFinalNotFound(status.error);
-                console.warn("[MusicLyrics] 网易云: 歌词响应为空 (HTTP " + httpStatus + ")");
+                console.warn("[Lyrics] 网易云: 歌词响应为空 (HTTP " + httpStatus + ")");
                 return;
             }
 
@@ -559,7 +559,7 @@ PluginComponent {
                 if (!result.title) {
                     root.neteaseStatus = status.notFound;
                     root._setFinalNotFound(status.notFound);
-                    console.info("[MusicLyrics] ✗ 网易云: 未返回歌曲数据 ID: " + songId);
+                    console.info("[Lyrics] ✗ 网易云: 未返回歌曲数据 ID: " + songId);
                     return;
                 }
 
@@ -567,7 +567,7 @@ PluginComponent {
                 if (lyricText.trim() === "") {
                     root.neteaseStatus = status.notFound;
                     root._setFinalNotFound(status.notFound);
-                    console.info("[MusicLyrics] ✗ 网易云: 该歌曲无歌词 - \"" + matchedName + "\"");
+                    console.info("[Lyrics] ✗ 网易云: 该歌曲无歌词 - \"" + matchedName + "\"");
                     return;
                 }
 
@@ -575,7 +575,7 @@ PluginComponent {
                 if (lines.length === 0) {
                     root.neteaseStatus = status.notFound;
                     root._setFinalNotFound(status.notFound);
-                    console.info("[MusicLyrics] ✗ 网易云: LRC解析失败 - \"" + matchedName + "\"");
+                    console.info("[Lyrics] ✗ 网易云: LRC解析失败 - \"" + matchedName + "\"");
                     return;
                 }
 
@@ -583,20 +583,20 @@ PluginComponent {
                 root.neteaseStatus = status.found;
                 root.lyricStatus = lyricState.synced;
                 root.lyricSource = lyricSrc.netease;
-                console.info("[MusicLyrics] ✓ 网易云: 已找到同步歌词 (" + lines.length + " 行) - \"" + expectedTitle + "\" (匹配: \"" + matchedName + "\" - " + matchedArtist + ")");
+                console.info("[Lyrics] ✓ 网易云: 已找到同步歌词 (" + lines.length + " 行) - \"" + expectedTitle + "\" (匹配: \"" + matchedName + "\" - " + matchedArtist + ")");
                 root._cancelActiveFetch = null;
                 if (root.cachingEnabled)
                     root.writeToCache(expectedTitle, expectedArtist, lines, lyricSrc.netease);
             } catch (e) {
                 root.neteaseStatus = status.error;
                 root._setFinalNotFound(status.error);
-                console.warn("[MusicLyrics] 网易云: 解析歌词响应失败 — " + e);
-                console.warn("[MusicLyrics] 网易云: 原始数据: " + rawData.substring(0, 200));
+                console.warn("[Lyrics] 网易云: 解析歌词响应失败 — " + e);
+                console.warn("[Lyrics] 网易云: 原始数据: " + rawData.substring(0, 200));
             }
         }, function (errMsg) {
             root.neteaseStatus = status.error;
             root._setFinalNotFound(status.error);
-            console.warn("[MusicLyrics] 网易云: 歌词请求失败 — " + errMsg);
+            console.warn("[Lyrics] 网易云: 歌词请求失败 — " + errMsg);
         });
     }
 
@@ -1260,6 +1260,6 @@ PluginComponent {
     popoutHeight: 300
 
     Component.onCompleted: {
-        console.info("[MusicLyrics] 插件已加载");
+        console.info("[Lyrics] 插件已加载");
     }
 }

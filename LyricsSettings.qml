@@ -10,7 +10,7 @@ PluginSettings {
 
     StyledText {
         width: parent.width
-        text: "歌词设置"
+        text: "Lyrics 设置"
         font.pixelSize: Theme.fontSizeLarge
         font.weight: Font.Bold
         color: Theme.surfaceText

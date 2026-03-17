@@ -1,4 +1,4 @@
-# Music Lyrics Plugin for DankMaterialShell
+# Lyrics Plugin for DankMaterialShell
 
 ![Version](https://img.shields.io/badge/version-1.5.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
@@ -9,11 +9,11 @@
 ## 功能特性
 
 - 🎵 **多源歌词获取** - 支持从 lrclib.net、网易云音乐等多个来源获取歌词
-- 🔄 **实时同步** - 根据播放进度自动高亮当前歌词行
-- 💾 **本地缓存** - 自动缓存下载的歌词，加快加载速度
+- 🔄 **实时同步** - 根据 MPRIS 播放进度自动高亮当前歌词行
+- 💾 **本地缓存** - 自动缓存下载的歌词，加快后续加载速度
 - 🎨 **精美 UI** - macOS 风格进度条，圆形专辑封面，现代化设计
 - 🎛️ **播放控制** - 支持上一首/播放/暂停/下一首控制
-- 📱 **双栏支持** - 完美适配横向和纵向 DankBar
+- 📱 **双栏适配** - 完美适配横向和纵向 DankBar
 - 🔍 **智能匹配** - 自动匹配歌曲信息，支持模糊搜索
 
 ## 截图
@@ -41,7 +41,7 @@ dms ipc call plugins reload musicLyrics
 
 1. 打开 DankMaterialShell 设置
 2. 进入 Plugins → Scan for Plugins
-3. 找到 "Music Lyrics" 并启用
+3. 找到 "Lyrics" 并启用
 4. 将插件添加到 DankBar
 
 ## 配置
@@ -58,31 +58,31 @@ dms ipc call plugins reload musicLyrics
 
 ### Bar 显示
 
-- **横向 Bar**：显示当前播放歌曲的圆形专辑封面和歌词/歌曲名
+- **横向 Bar**：显示当前播放歌曲的圆形专辑封面（36px）和歌词/歌曲名
 - **纵向 Bar**：显示歌词图标和音符指示器
 
 ### 弹出面板
 
-点击 Bar 上的插件图标打开弹出面板，包含：
+点击 Bar 上的插件图标打开弹出面板（420×300px），包含：
 
 - 🎵 **当前播放** - 歌曲名、艺术家、专辑信息
-- 🖼️ **专辑封面** - 大尺寸圆形封面（200x200px）
-- 📊 **进度条** - macOS 风格进度条，带当前时间显示
+- 🖼️ **专辑封面** - 大尺寸圆形封面（200×200px），带加载动画
+- 📊 **进度条** - macOS 风格进度条（12px 轨道 + 16px 圆点），支持点击跳转
 - 🎮 **播放控制** - 上一首/播放/暂停/下一首按钮
 
 ### 歌词同步
 
 - 自动根据 MPRIS 播放进度同步歌词
 - 每 200ms 更新一次当前歌词行
-- 支持 LRC 格式时间标签
+- 支持 LRC 格式时间标签解析
 
-## 歌词来源
+## 歌词获取流程
 
 插件按以下优先级获取歌词：
 
-1. **本地缓存** - 如果已缓存直接加载
+1. **本地缓存** - 如果已缓存直接加载（缓存命中）
 2. **lrclib.net** - 开源歌词库，支持同步歌词
-3. **网易云音乐** - 通过 API 搜索和获取歌词
+3. **网易云音乐** - 通过搜索 API + paugram API 获取歌词
 
 ## 技术细节
 
@@ -96,33 +96,45 @@ dms ipc call plugins reload musicLyrics
 
 ```
 musicLyrics/
-├── MusicLyrics.qml          # 主组件
-├── MusicLyricsSettings.qml  # 设置界面
-├── plugin.json              # 插件配置
-└── README.md                # 本文件
+├── Lyrics.qml               # 主组件（歌词获取、解析、UI 渲染）
+├── LyricsSettings.qml       # 设置界面
+├── plugin.json              # 插件配置（id, name, version, permissions 等）
+├── README.md                # 本文件
+└── LICENSE                  # MIT 许可证
 ```
 
-### 主要功能模块
+### 核心功能模块
 
-- **歌词获取** (`_fetchFromLrclib`, `_fetchFromNetease`)
-- **LRC 解析** (`parseLrc`)
-- **缓存管理** (`readFromCache`, `writeToCache`)
-- **进度同步** (`positionTimer`)
-- **UI 组件** (`horizontalBarPill`, `verticalBarPill`, `popoutContent`)
+| 模块 | 功能 | 关键函数/组件 |
+|------|------|---------------|
+| **歌词获取** | 从多个源获取歌词 | `_fetchFromLrclib()`, `_fetchFromNetease()` |
+| **LRC 解析** | 解析 LRC 格式歌词 | `parseLrc()` |
+| **缓存管理** | 读写本地缓存 | `readFromCache()`, `writeToCache()`, `_cacheKey()` |
+| **进度同步** | 同步歌词高亮 | `positionTimer` |
+| **UI 渲染** | Bar 和弹出面板 | `horizontalBarPill`, `verticalBarPill`, `popoutContent` |
+| **状态管理** | 歌词源状态显示 | `lrclibStatus`, `neteaseStatus`, `cacheStatus`, `_chipMeta` |
+
+### 状态枚举
+
+- `lyricState`: idle(0), loading(1), synced(2), notFound(3)
+- `lyricSrc`: none(0), lrclib(1), cache(2), netease(3)
+- `status`: none(0), searching(1), found(2), notFound(3), error(4), skippedConfig(5), skippedFound(6), skippedPlain(7), cacheHit(8), cacheMiss(9), cacheDisabled(10)
 
 ## 更新日志
 
 ### v1.5.0
-- ✨ 新增 macOS 风格进度条
+- ✨ 新增 macOS 风格进度条（支持点击跳转）
 - ✨ 增大专辑封面尺寸（Bar 36px，弹出面板 200px）
 - ✨ 优化中文字体显示
-- ✨ 添加播放控制按钮
+- ✨ 添加播放控制按钮（上一首/播放/暂停/下一首）
+- ✨ 添加歌词来源状态显示芯片
 - 🐛 修复歌词同步精度问题
 
 ### v1.4.0
 - ✨ 添加网易云音乐歌词源
-- ✨ 实现本地缓存功能
-- ✨ 添加歌词来源状态显示
+- ✨ 实现本地缓存功能（FNV-1a 哈希命名）
+- ✨ 添加 XHR 超时和重试机制
+- ✨ 添加防抖动处理（debounce）
 
 ## 贡献
 
@@ -137,8 +149,9 @@ musicLyrics/
 - [DankMaterialShell](https://danklinux.com/) - 优秀的 Wayland 桌面 Shell
 - [lrclib.net](https://lrclib.net/) - 开源歌词库
 - [网易云音乐](https://music.163.com/) - 歌词数据源
+- [paugram API](https://api.paugram.com/) - 网易云歌词 API
 
 ---
 
-**作者：** gasiyu  
+**作者：** xubuyuan18  
 **项目地址：** https://github.com/xubuyuan18/dms-plugin-Lyrics

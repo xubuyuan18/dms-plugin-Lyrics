@@ -1,12 +1,12 @@
 {
-  "id": "musicLyrics",
-  "name": "Music Lyrics",
+  "id": "lyrics",
+  "name": "Lyrics",
   "description": "从多个来源显示同步音乐歌词",
   "version": "1.5.0",
-  "author": "gasiyu",
+  "author": "xubuyuan18",
   "icon": "lyrics",
   "type": "widget",
-  "component": "./MusicLyrics.qml",
-  "settings": "./MusicLyricsSettings.qml",
+  "component": "./Lyrics.qml",
+  "settings": "./LyricsSettings.qml",
   "permissions": ["settings_read", "settings_write", "process", "network"]
 }

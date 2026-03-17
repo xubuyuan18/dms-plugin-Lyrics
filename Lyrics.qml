@@ -1207,23 +1207,24 @@ PluginComponent {
                                     visible: root.activePlayer
                                 }
 
-                                // Artist & Album
+                                // Artist & Album - 放大字体，优化布局
                                 Column {
                                     width: parent.width
-                                    spacing: 2
+                                    spacing: 4  // 增加行间距
                                     visible: root.activePlayer
 
                                     Row {
-                                        spacing: Theme.spacingXS
+                                        spacing: Theme.spacingS  // 增加图标和文字间距
                                         DankIcon {
                                             name: "person"
-                                            size: 14
+                                            size: 16  // 放大图标
                                             color: Theme.surfaceVariantText
                                             anchors.verticalCenter: parent.verticalCenter
                                         }
                                         StyledText {
                                             text: root.currentArtist || "未知艺术家"
-                                            font.pixelSize: Theme.fontSizeMedium
+                                            font.pixelSize: Theme.fontSizeMedium + 2  // 放大字体
+                                            font.weight: Font.Medium  // 加粗
                                             color: Theme.surfaceText
                                             anchors.verticalCenter: parent.verticalCenter
                                             maximumLineCount: 1
@@ -1232,17 +1233,18 @@ PluginComponent {
                                     }
 
                                     Row {
-                                        spacing: Theme.spacingXS
+                                        spacing: Theme.spacingS  // 增加图标和文字间距
                                         visible: root.currentAlbum !== ""
                                         DankIcon {
                                             name: "album"
-                                            size: 14
+                                            size: 16  // 放大图标
                                             color: Theme.surfaceVariantText
                                             anchors.verticalCenter: parent.verticalCenter
                                         }
                                         StyledText {
                                             text: root.currentAlbum
-                                            font.pixelSize: Theme.fontSizeSmall
+                                            font.pixelSize: Theme.fontSizeMedium  // 放大字体
+                                            font.weight: Font.Medium  // 加粗
                                             color: Theme.surfaceVariantText
                                             anchors.verticalCenter: parent.verticalCenter
                                             maximumLineCount: 1

@@ -78,13 +78,44 @@ PluginSettings {
                 defaultValue: false
             }
 
-            TextSetting {
-                settingKey: "customApiUrl"
-                label: "API 地址"
-                description: "自定义歌词 API 的 URL。支持变量: {title}, {artist}, {album}。例如: https://api.example.com/lyrics?title={title}&artist={artist}"
-                defaultValue: ""
-                placeholderText: "https://api.example.com/lyrics?title={title}&artist={artist}"
-                enabled: pluginData.customApiEnabled ?? false
+            StyledText {
+                text: "API 地址"
+                font.pixelSize: Theme.fontSizeMedium
+                font.weight: Font.Medium
+                color: Theme.surfaceText
+                visible: pluginData.customApiEnabled ?? false
+            }
+
+            StyledText {
+                text: "自定义歌词 API 的 URL。支持变量: {title}, {artist}, {album}"
+                font.pixelSize: Theme.fontSizeSmall
+                color: Theme.surfaceVariantText
+                wrapMode: Text.WordWrap
+                visible: pluginData.customApiEnabled ?? false
+            }
+
+            // 使用 TextField 作为输入框
+            Rectangle {
+                width: parent.width
+                height: 36
+                radius: Theme.cornerRadius
+                color: Theme.surfaceContainerHighest
+                visible: pluginData.customApiEnabled ?? false
+
+                TextInput {
+                    id: apiUrlInput
+                    anchors.fill: parent
+                    anchors.margins: Theme.spacingS
+                    text: pluginData.customApiUrl ?? ""
+                    color: Theme.surfaceText
+                    font.pixelSize: Theme.fontSizeMedium
+                    verticalAlignment: TextInput.AlignVCenter
+                    clip: true
+
+                    onTextChanged: {
+                        pluginData.customApiUrl = text
+                    }
+                }
             }
         }
     }

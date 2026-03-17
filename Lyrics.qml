@@ -1054,28 +1054,26 @@ PluginComponent {
                         clip: true
 
                         // ============================================
-                        // 专辑封面显示区域（已注释）
+                        // 专辑封面显示区域
                         // ============================================
-                        // DankAlbumArt {
-                        //     id: _coverArtContainer
-                        //     width: 200
-                        //     height: 200
-                        //     visible: root.activePlayer && (root.activePlayer.trackArtUrl ?? "") !== ""
-                        //     anchors.top: parent.top
-                        //     anchors.right: parent.right
-                        //     anchors.topMargin: -40
-                        //     anchors.rightMargin: -35
-                        //     z: 10
-                        //     activePlayer: root.activePlayer
-                        //     showAnimation: true
-                        // }
-
-                        // 临时占位，保持 _coverArtContainer 引用不报错
-                        Item {
+                        // 设计说明：
+                        // - 尺寸：200x200，较大的视觉冲击力
+                        // - 位置：卡片右上角，部分超出边界（-50, -33）营造视觉层次感
+                        // - z-index: 10，确保封面显示在歌曲信息（z:1）上方
+                        // - 使用 DankAlbumArt 组件自动加载和显示封面
+                        // ============================================
+                        DankAlbumArt {
                             id: _coverArtContainer
-                            visible: false
-                            width: 0
-                            height: 0
+                            width: 200
+                            height: 200
+                            visible: root.activePlayer && (root.activePlayer.trackArtUrl ?? "") !== ""
+                            anchors.top: parent.top
+                            anchors.right: parent.right
+                            anchors.topMargin: -40      // 向上偏移，部分超出卡片边界
+                            anchors.rightMargin: -35    // 向右偏移，部分超出卡片边界
+                            z: 10                       // 高层级，覆盖在文字上方
+                            activePlayer: root.activePlayer
+                            showAnimation: true         // 启用加载动画
                         }
 
                         // API 状态指示器 - 右下角
@@ -1100,11 +1098,9 @@ PluginComponent {
                             clip: false
                             z: 1
 
-                            // Track info column (takes remaining space)
+                            // Track info column (takes full width, cover overlays on top)
                             Column {
-                                width: _coverArtContainer.visible
-                                       ? parent.width - 180 - parent.spacing
-                                       : parent.width
+                                width: parent.width
                                 spacing: Theme.spacingS
 
                                 // Header row: icon + "Now Playing"

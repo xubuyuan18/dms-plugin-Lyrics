@@ -634,7 +634,7 @@ PluginComponent {
                 return;
             }
 
-            var matchedSong = _findBestMatch(songs, expectedTitle);
+            var matchedSong = _findBestMatch(songs, expectedTitle, currentAlbum);
             var songId = matchedSong.id;
             var songName = matchedSong.name;
             var artistName = matchedSong.artists?.[0]?.name || "未知";
@@ -827,33 +827,64 @@ PluginComponent {
     }
 
     /**
-     * 网易云歌曲匹配 - 支持大小写和空格模糊匹配
+     * 网易云歌曲匹配 - 支持大小写、空格模糊匹配和专辑匹配
      */
-    function _findBestMatch(songs, expectedTitle) {
+    function _findBestMatch(songs, expectedTitle, expectedAlbum) {
         // 标准化函数：转为小写并移除所有空格
         function normalize(str) {
+            if (!str) return "";
             return str.toLowerCase().replace(/\s+/g, "");
         }
 
         var normalizedExpected = normalize(expectedTitle);
+        var normalizedExpectedAlbum = normalize(expectedAlbum);
 
-        // 第一优先级：完全匹配（忽略大小写和空格）
-        for (var i = 0; i < songs.length; i++) {
-            if (normalize(songs[i].name) === normalizedExpected) {
-                console.info("[Lyrics] 网易云: 精确匹配 \"" + songs[i].name + "\"");
-                return songs[i];
+        // 第一优先级：歌曲名完全匹配 + 专辑匹配
+        if (normalizedExpectedAlbum) {
+            for (var i = 0; i < songs.length; i++) {
+                var songAlbum = normalize(songs[i].album?.name || songs[i].album);
+                if (normalize(songs[i].name) === normalizedExpected && 
+                    songAlbum === normalizedExpectedAlbum) {
+                    console.info("[Lyrics] 网易云: 精确匹配(含专辑) \"" + songs[i].name + "\" - \"" + (songs[i].album?.name || songs[i].album) + "\"");
+                    return songs[i];
+                }
             }
         }
 
-        // 第二优先级：忽略大小写的包含匹配
-        var lowerExpected = expectedTitle.toLowerCase();
+        // 第二优先级：歌曲名完全匹配（忽略大小写和空格）
         for (var j = 0; j < songs.length; j++) {
-            var songNameLower = songs[j].name.toLowerCase();
-            if (songNameLower === lowerExpected ||
-                songNameLower.indexOf(lowerExpected) !== -1 ||
-                lowerExpected.indexOf(songNameLower) !== -1) {
-                console.info("[Lyrics] 网易云: 模糊匹配 \"" + songs[j].name + "\"");
+            if (normalize(songs[j].name) === normalizedExpected) {
+                console.info("[Lyrics] 网易云: 精确匹配 \"" + songs[j].name + "\"");
                 return songs[j];
+            }
+        }
+
+        // 第三优先级：歌曲名模糊匹配 + 专辑匹配
+        if (normalizedExpectedAlbum) {
+            var lowerExpected = expectedTitle.toLowerCase();
+            for (var k = 0; k < songs.length; k++) {
+                var songNameLower = songs[k].name.toLowerCase();
+                var songAlbum2 = normalize(songs[k].album?.name || songs[k].album);
+                var nameMatches = songNameLower === lowerExpected ||
+                                  songNameLower.indexOf(lowerExpected) !== -1 ||
+                                  lowerExpected.indexOf(songNameLower) !== -1;
+                
+                if (nameMatches && songAlbum2 === normalizedExpectedAlbum) {
+                    console.info("[Lyrics] 网易云: 模糊匹配(含专辑) \"" + songs[k].name + "\" - \"" + (songs[k].album?.name || songs[k].album) + "\"");
+                    return songs[k];
+                }
+            }
+        }
+
+        // 第四优先级：忽略大小写的包含匹配
+        var lowerExpected2 = expectedTitle.toLowerCase();
+        for (var m = 0; m < songs.length; m++) {
+            var songNameLower2 = songs[m].name.toLowerCase();
+            if (songNameLower2 === lowerExpected2 ||
+                songNameLower2.indexOf(lowerExpected2) !== -1 ||
+                lowerExpected2.indexOf(songNameLower2) !== -1) {
+                console.info("[Lyrics] 网易云: 模糊匹配 \"" + songs[m].name + "\"");
+                return songs[m];
             }
         }
 
@@ -1081,14 +1112,35 @@ PluginComponent {
                 }
             }
 
-            StyledText {
-                text: root.currentLyricText
-                font.pixelSize: Theme.fontSizeMedium
-                color: Theme.surfaceText
+            Row {
                 anchors.verticalCenter: parent.verticalCenter
-                maximumLineCount: 1
-                elide: Text.ElideRight
-                width: Math.min(implicitWidth, 500)  // 增加最大长度到500
+                spacing: 8
+                width: Math.min(implicitWidth, 500)
+
+                // 歌曲名 - 紧凑、大两号
+                StyledText {
+                    text: root.currentTitle || I18n.tr("暂无歌词")
+                    font.pixelSize: (pluginData.lyricsFontSize || Theme.fontSizeMedium) + 2
+                    color: Theme.surfaceText
+                    font.weight: Font.Bold
+                    maximumLineCount: 1
+                    elide: Text.ElideRight
+                }
+
+                // 歌词 - 紧凑显示
+                StyledText {
+                    text: {
+                        if (root.lyricsLines.length > 0 && root.currentLineIndex >= 0 && root.lyricsLines[root.currentLineIndex].text) {
+                            return root.lyricsLines[root.currentLineIndex].text;
+                        }
+                        return "";
+                    }
+                    font.pixelSize: pluginData.lyricsFontSize || Theme.fontSizeMedium
+                    color: Theme.surfaceVariantText
+                    maximumLineCount: 1
+                    elide: Text.ElideRight
+                    visible: text !== ""
+                }
             }
         }
     }

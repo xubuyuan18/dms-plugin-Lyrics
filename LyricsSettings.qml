@@ -1,5 +1,7 @@
 import Quickshell
 import QtQuick
+import QtQuick.Controls
+import Quickshell.Io
 import qs.Common
 import qs.Modules.Plugins
 import qs.Widgets
@@ -50,6 +52,104 @@ PluginSettings {
                 description: I18n.tr("将下载的歌词保存在本地，加快加载速度并减少网络请求。歌词文件将存储在 ~/.cache/Lyrics 目录下。")
                 defaultValue: true
             }
+
+            // 刷新缓存按钮
+            Row {
+                spacing: Theme.spacingS
+                anchors.left: parent.left
+                anchors.right: parent.right
+
+                // 清除缓存按钮
+                MouseArea {
+                    id: clearCacheButton
+                    width: clearCacheRow.implicitWidth + Theme.spacingM * 2
+                    height: 36
+                    anchors.verticalCenter: parent.verticalCenter
+
+                    onClicked: clearCacheDialog.open()
+
+                    Rectangle {
+                        anchors.fill: parent
+                        radius: Theme.cornerRadius
+                        color: clearCacheButton.pressed ? Theme.surfaceContainerHighest : Theme.surfaceContainer
+
+                        Row {
+                            id: clearCacheRow
+                            anchors.centerIn: parent
+                            spacing: Theme.spacingS
+
+                            DankIcon {
+                                name: "refresh"
+                                size: Theme.iconSizeSmall
+                                color: Theme.surfaceText
+                                anchors.verticalCenter: parent.verticalCenter
+                            }
+
+                            StyledText {
+                                text: I18n.tr("刷新缓存")
+                                font.pixelSize: Theme.fontSizeSmall
+                                color: Theme.surfaceText
+                                anchors.verticalCenter: parent.verticalCenter
+                            }
+                        }
+                    }
+                }
+
+                StyledText {
+                    id: cacheStatusText
+                    text: ""
+                    font.pixelSize: Theme.fontSizeSmall
+                    color: Theme.surfaceVariantText
+                    anchors.verticalCenter: parent.verticalCenter
+                    visible: text !== ""
+                }
+            }
+        }
+    }
+
+    // 清除缓存确认对话框
+    Dialog {
+        id: clearCacheDialog
+        title: I18n.tr("确认清除缓存")
+        modal: true
+        standardButtons: Dialog.Yes | Dialog.No
+
+        contentItem: StyledText {
+            text: I18n.tr("确定要清除所有歌词缓存吗？此操作不可恢复。")
+            wrapMode: Text.WordWrap
+            width: parent.width
+        }
+
+        onAccepted: {
+            clearCacheProcess.running = true;
+        }
+    }
+
+    // 清除缓存进程
+    Process {
+        id: clearCacheProcess
+        command: ["rm", "-rf", (Quickshell.env("HOME") || "") + "/.cache/Lyrics"]
+        running: false
+        onExited: (exitCode, exitStatus) => {
+            if (exitCode === 0) {
+                cacheStatusText.text = I18n.tr("缓存已清除");
+                cacheStatusText.color = Theme.primary;
+                console.info("[Lyrics] 缓存已清除");
+            } else {
+                cacheStatusText.text = I18n.tr("清除失败");
+                cacheStatusText.color = Theme.error;
+                console.warn("[Lyrics] 缓存清除失败");
+            }
+            // 3秒后清除状态文本
+            clearStatusTimer.start();
+        }
+    }
+
+    Timer {
+        id: clearStatusTimer
+        interval: 3000
+        onTriggered: {
+            cacheStatusText.text = "";
         }
     }
 

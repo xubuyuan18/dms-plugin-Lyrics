@@ -1234,16 +1234,6 @@ PluginComponent {
                             showAnimation: true         // 启用加载动画
                         }
 
-                        // API 状态指示器 - 右下角
-                        ApiStatusIndicators {
-                            anchors {
-                                right: parent.right
-                                bottom: parent.bottom
-                                margins: Theme.spacingM
-                            }
-                            z: 20
-                        }
-
                         Row {
                             id: nowPlayingContent
                             anchors {
@@ -1342,10 +1332,15 @@ PluginComponent {
                                     }
                                 }
 
+                                // API 状态指示器 - 移动到歌曲信息下方，左对齐
+                                ApiStatusIndicators {
+                                    visible: root.activePlayer
+                                }
+
                                 // Spacer to ensure vertical separation from cover art
                                 Item {
                                     width: 1
-                                    height: _coverArtContainer.visible ? 8 : 0
+                                    height: _coverArtContainer.visible ? 24 : 0
                                 }
 
                                 // Progress bar with timestamps

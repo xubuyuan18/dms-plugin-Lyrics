@@ -1213,26 +1213,70 @@ PluginComponent {
                         clip: true
 
                         // ============================================
-                        // 专辑封面显示区域
+                        // 专辑封面显示区域（黑胶唱片效果）
                         // ============================================
                         // 设计说明：
                         // - 尺寸：200x200，较大的视觉冲击力
-                        // - 位置：卡片右上角，部分超出边界（-50, -33）营造视觉层次感
-                        // - z-index: 10，确保封面显示在歌曲信息（z:1）上方
-                        // - 使用 DankAlbumArt 组件自动加载和显示封面
+                        // - 位置：卡片右上角，部分超出边界营造视觉层次感
+                        // - z-index: 10，确保封面显示在歌曲信息上方
+                        // - 旋转动画：播放时旋转，暂停时停止
                         // ============================================
-                        DankAlbumArt {
+                        Item {
                             id: _coverArtContainer
                             width: 200
                             height: 200
                             visible: root.activePlayer && (root.activePlayer.trackArtUrl ?? "") !== ""
                             anchors.top: parent.top
                             anchors.right: parent.right
-                            anchors.topMargin: -40      // 向上偏移，部分超出卡片边界
-                            anchors.rightMargin: -35    // 向右偏移，部分超出卡片边界
-                            z: 10                       // 高层级，覆盖在文字上方
-                            activePlayer: root.activePlayer
-                            showAnimation: true         // 启用加载动画
+                            anchors.topMargin: -40
+                            anchors.rightMargin: -35
+                            z: 10
+
+                            // 旋转动画
+                            RotationAnimation on rotation {
+                                id: coverRotation
+                                from: 0
+                                to: 360
+                                duration: 10000  // 10秒一圈
+                                loops: Animation.Infinite
+                                running: root.activePlayer?.playbackState === MprisPlaybackState.Playing
+                                easing.type: Easing.Linear
+                            }
+
+                            // 封面图片（圆形裁剪）
+                            Rectangle {
+                                width: parent.width
+                                height: parent.height
+                                radius: width / 2
+                                clip: true
+                                color: Theme.surfaceContainerHighest
+
+                                DankAlbumArt {
+                                    anchors.fill: parent
+                                    activePlayer: root.activePlayer
+                                    showAnimation: false
+                                }
+
+                                // 黑胶唱片中心圆点
+                                Rectangle {
+                                    anchors.centerIn: parent
+                                    width: 40
+                                    height: 40
+                                    radius: 20
+                                    color: Theme.surfaceContainerHighest
+                                    border.color: Theme.outlineVariant
+                                    border.width: 2
+
+                                    // 中心小孔
+                                    Rectangle {
+                                        anchors.centerIn: parent
+                                        width: 12
+                                        height: 12
+                                        radius: 6
+                                        color: Theme.surface
+                                    }
+                                }
+                            }
                         }
 
                         // API 状态指示器 - 右下角

@@ -1237,7 +1237,7 @@ PluginComponent {
                                 id: coverRotation
                                 from: 0
                                 to: 360
-                                duration: 10000  // 10秒一圈
+                                duration: 20000  // 20秒一圈（更慢的速度）
                                 loops: Animation.Infinite
                                 running: root.activePlayer?.playbackState === MprisPlaybackState.Playing
                                 easing.type: Easing.Linear

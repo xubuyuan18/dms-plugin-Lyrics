@@ -1360,17 +1360,103 @@ PluginComponent {
                                     spacing: 4
                                     visible: root.activePlayer && root.currentDuration > 0
 
-                                    // ============================================
-                                    // macOS Style Progress Bar
-                                    // ============================================
-                                    // 设计说明：
-                                    // - 宽度：与父容器对齐，占满可用空间
-                                    // - 轨道高度：16px，较粗的视觉效果
-                                    // - 中间圆点：比轨道稍大（20px），突出显示当前位置
-                                    // - 点击/拖动：支持跳转播放位置
-                                    // ============================================
+                                // ============================================
+                                // Volume Control - 音量控制
+                                // ============================================
+                                // 设计说明：
+                                // - 位置：进度条上方
+                                // - 宽度：比进度条短一些（80%宽度）
+                                // - 包含音量图标和可拖动的音量条
+                                // ============================================
+                                Row {
+                                    width: parent.width * 0.8
+                                    anchors.horizontalCenter: parent.horizontalCenter
+                                    spacing: Theme.spacingS
+                                    visible: root.activePlayer
+
+                                    // 音量图标
+                                    DankIcon {
+                                        id: volumeIcon
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        name: {
+                                            if (!root.activePlayer) return "volume_mute";
+                                            var vol = root.activePlayer.volume || 0;
+                                            if (vol === 0) return "volume_mute";
+                                            if (vol < 0.3) return "volume_down";
+                                            return "volume_up";
+                                        }
+                                        size: 18
+                                        color: Theme.surfaceVariantText
+                                    }
+
+                                    // 音量条
                                     Item {
-                                        id: macProgressBar
+                                        id: volumeBar
+                                        width: parent.width - volumeIcon.width - parent.spacing
+                                        height: 24
+                                        anchors.verticalCenter: parent.verticalCenter
+
+                                        property real volume: root.activePlayer ? (root.activePlayer.volume || 0) : 0
+
+                                        // 背景轨道
+                                        Rectangle {
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            width: parent.width
+                                            height: 10
+                                            radius: 5
+                                            color: Theme.surfaceContainerHighest
+                                        }
+
+                                        // 音量填充
+                                        Rectangle {
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            anchors.left: parent.left
+                                            width: parent.width * volumeBar.volume
+                                            height: 10
+                                            radius: 5
+                                            color: Theme.primary
+                                        }
+
+                                        // 音量圆点
+                                        Rectangle {
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            x: parent.width * volumeBar.volume - width / 2
+                                            width: 14
+                                            height: 14
+                                            radius: 7
+                                            color: Theme.surface
+                                            border.color: Theme.outlineVariant
+                                            border.width: 1
+                                        }
+
+                                        // 点击和拖动调整音量
+                                        MouseArea {
+                                            anchors.fill: parent
+                                            onClicked: (mouse) => {
+                                                if (!root.activePlayer) return;
+                                                var newVolume = Math.max(0, Math.min(1, mouse.x / parent.width));
+                                                root.activePlayer.volume = newVolume;
+                                            }
+                                            onPositionChanged: (mouse) => {
+                                                if (!pressed || !root.activePlayer) return;
+                                                var newVolume = Math.max(0, Math.min(1, mouse.x / parent.width));
+                                                root.activePlayer.volume = newVolume;
+                                            }
+                                        }
+                                    }
+                                }
+
+                                // ============================================
+                                // macOS Style Progress Bar
+                                // ============================================
+                                // 设计说明：
+                                // - 宽度：与父容器对齐，占满可用空间
+                                // - 轨道高度：16px，较粗的视觉效果
+                                // - 中间圆点：比轨道稍大（20px），突出显示当前位置
+                                // - 点击/拖动：支持跳转播放位置
+                                // ============================================
+                                Item {
+                                    id: macProgressBar
                                         width: parent.width
                                         height: 32
                                         anchors.horizontalCenter: parent.horizontalCenter

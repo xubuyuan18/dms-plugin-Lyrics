@@ -109,12 +109,12 @@ PluginComponent {
     // ============================================
     property string currentLyricText: {
         if (lyricsLoading)
-            return "搜索歌词中…";
+            return I18n.tr("搜索歌词中…");
         if (lyricsLines.length > 0 && currentLineIndex >= 0)
-            return lyricsLines[currentLineIndex].text || "♪ ♪ ♪";
+            return lyricsLines[currentLineIndex].text || I18n.tr("♪ ♪ ♪");
         if (currentTitle)
             return currentTitle;
-        return "暂无歌词";
+        return I18n.tr("暂无歌词");
     }
 
     // ============================================
@@ -927,47 +927,47 @@ PluginComponent {
             [status.searching]: {
                 color: Theme.secondary,
                 icon: "hourglass_top",
-                label: "搜索中…"
+                label: I18n.tr("搜索中…")
             },
             [status.found]: {
                 color: Theme.primary,
                 icon: "check_circle",
-                label: "已找到 - 同步歌词"
+                label: I18n.tr("已找到 - 同步歌词")
             },
             [status.notFound]: {
                 color: Theme.warning,
                 icon: "cancel",
-                label: "未找到"
+                label: I18n.tr("未找到")
             },
             [status.error]: {
                 color: Theme.error,
                 icon: "error",
-                label: "错误"
+                label: I18n.tr("错误")
             },
             [status.skippedConfig]: {
                 color: Theme.warning,
                 icon: "block",
-                label: "已跳过 - 未配置"
+                label: I18n.tr("已跳过 - 未配置")
             },
             [status.skippedFound]: {
                 color: Theme.warning,
                 icon: "block",
-                label: "已跳过 - 已找到"
+                label: I18n.tr("已跳过 - 已找到")
             },
             [status.cacheHit]: {
                 color: Theme.primary,
                 icon: "check_circle",
-                label: "缓存命中 - 从缓存加载"
+                label: I18n.tr("缓存命中 - 从缓存加载")
             },
             [status.cacheMiss]: {
                 color: Theme.warning,
                 icon: "cancel",
-                label: "缓存未命中"
+                label: I18n.tr("缓存未命中")
             },
             [status.cacheDisabled]: {
                 color: Theme.surfaceVariantText,
                 icon: "do_not_disturb_on",
-                label: "已禁用"
+                label: I18n.tr("已禁用")
             }
         })
 
@@ -975,7 +975,7 @@ PluginComponent {
         return _chipMeta[val] ?? {
             color: Theme.surfaceContainerHighest,
             icon: "radio_button_unchecked",
-            label: "空闲"
+            label: I18n.tr("空闲")
         };
     }
 
@@ -1072,10 +1072,10 @@ PluginComponent {
                 spacing: 4
 
                 DankIcon {
-                    name: "cloud"
-                    size: 16
-                    color: root._apiStatusColor(root.neteaseStatus)
-                    anchors.verticalCenter: parent.verticalCenter
+                name: "cloud"
+                size: Theme.iconSizeSmall
+                color: root._apiStatusColor(root.neteaseStatus)
+                anchors.verticalCenter: parent.verticalCenter
                 }
 
                 StyledText {
@@ -1112,10 +1112,10 @@ PluginComponent {
                 spacing: 4
 
                 DankIcon {
-                    name: "library_music"
-                    size: 16
-                    color: root._apiStatusColor(root.lrclibStatus)
-                    anchors.verticalCenter: parent.verticalCenter
+                name: "library_music"
+                size: Theme.iconSizeSmall
+                color: root._apiStatusColor(root.lrclibStatus)
+                anchors.verticalCenter: parent.verticalCenter
                 }
 
                 StyledText {
@@ -1152,10 +1152,10 @@ PluginComponent {
                 spacing: 4
 
                 DankIcon {
-                    name: "storage"
-                    size: 16
-                    color: root._apiStatusColor(root.cacheStatus)
-                    anchors.verticalCenter: parent.verticalCenter
+                name: "storage"
+                size: Theme.iconSizeSmall
+                color: root._apiStatusColor(root.cacheStatus)
+                anchors.verticalCenter: parent.verticalCenter
                 }
 
                 StyledText {
@@ -1271,7 +1271,7 @@ PluginComponent {
                                     DankIcon {
                                         name: root.activePlayer && root.activePlayer.playbackState === MprisPlaybackState.Playing
                                               ? "play_circle" : "pause_circle"
-                                        size: 20
+                                        size: Theme.iconSize
                                         color: root.activePlayer ? Theme.primary : Theme.surfaceVariantText
                                         anchors.verticalCenter: parent.verticalCenter
                                     }
@@ -1308,7 +1308,7 @@ PluginComponent {
                                         spacing: Theme.spacingS
                                         DankIcon {
                                             name: "person"
-                                            size: 16
+                                            size: Theme.iconSizeSmall
                                             color: Theme.surfaceVariantText
                                             anchors.verticalCenter: parent.verticalCenter
                                         }
@@ -1328,7 +1328,7 @@ PluginComponent {
                                         visible: root.currentAlbum !== ""
                                         DankIcon {
                                             name: "album"
-                                            size: 16
+                                            size: Theme.iconSizeSmall
                                             color: Theme.surfaceVariantText
                                             anchors.verticalCenter: parent.verticalCenter
                                         }
@@ -1386,7 +1386,7 @@ PluginComponent {
                                             if (vol < 0.3) return "volume_down";
                                             return "volume_up";
                                         }
-                                        size: 18
+                                        size: Theme.iconSizeSmall
                                         color: Theme.surfaceVariantText
                                     }
 
@@ -1586,7 +1586,7 @@ PluginComponent {
                                             DankIcon {
                                                 anchors.centerIn: parent
                                                 name: "skip_previous"
-                                                size: 32
+                                                size: Theme.iconSize
                                                 color: Theme.surfaceText
                                             }
                                         }
@@ -1615,7 +1615,7 @@ PluginComponent {
                                             DankIcon {
                                                 anchors.centerIn: parent
                                                 name: root.activePlayer && root.activePlayer.playbackState === MprisPlaybackState.Playing ? "pause" : "play_arrow"
-                                                size: 36
+                                                size: Theme.iconSizeLarge
                                                 color: Theme.primary
                                             }
                                         }
@@ -1633,7 +1633,7 @@ PluginComponent {
                                             DankIcon {
                                                 anchors.centerIn: parent
                                                 name: "skip_next"
-                                                size: 32
+                                                size: Theme.iconSize
                                                 color: Theme.surfaceText
                                             }
                                         }
@@ -1706,7 +1706,7 @@ PluginComponent {
                 DankIcon {
                     anchors.centerIn: parent
                     name: sourceCard.icon
-                    size: 14
+                    size: Theme.iconSizeSmall
                     color: sourceCard.sourceStatus === 0
                            ? Theme.surfaceVariantText
                            : root.chipColor(sourceCard.sourceStatus)
@@ -1742,7 +1742,7 @@ PluginComponent {
 
                         DankIcon {
                             name: root.chipIcon(sourceCard.sourceStatus)
-                            size: 12
+                            size: Theme.iconSizeXSmall
                             color: root.chipColor(sourceCard.sourceStatus)
                             anchors.verticalCenter: parent.verticalCenter
                         }

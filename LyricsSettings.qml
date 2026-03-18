@@ -10,7 +10,7 @@ PluginSettings {
 
     StyledText {
         width: parent.width
-        text: "Lyrics 设置"
+        text: I18n.tr("Lyrics 设置")
         font.pixelSize: Theme.fontSizeLarge
         font.weight: Font.Bold
         color: Theme.surfaceText
@@ -18,7 +18,7 @@ PluginSettings {
 
     StyledText {
         width: parent.width
-        text: "配置歌词行为和歌词源"
+        text: I18n.tr("配置歌词行为和歌词源")
         font.pixelSize: Theme.fontSizeSmall
         color: Theme.surfaceVariantText
         wrapMode: Text.WordWrap
@@ -38,7 +38,7 @@ PluginSettings {
             spacing: Theme.spacingM
 
             StyledText {
-                text: "缓存"
+                text: I18n.tr("缓存")
                 font.pixelSize: Theme.fontSizeMedium
                 font.weight: Font.Medium
                 color: Theme.surfaceText
@@ -46,8 +46,8 @@ PluginSettings {
 
             ToggleSetting {
                 settingKey: "cachingEnabled"
-                label: "本地缓存"
-                description: "将下载的歌词保存在本地，加快加载速度并减少网络请求。歌词文件将存储在 ~/.cache/Lyrics 目录下。"
+                label: I18n.tr("本地缓存")
+                description: I18n.tr("将下载的歌词保存在本地，加快加载速度并减少网络请求。歌词文件将存储在 ~/.cache/Lyrics 目录下。")
                 defaultValue: true
             }
         }
@@ -67,7 +67,7 @@ PluginSettings {
             spacing: Theme.spacingM
 
             StyledText {
-                text: "内置歌词源"
+                text: I18n.tr("内置歌词源")
                 font.pixelSize: Theme.fontSizeMedium
                 font.weight: Font.Medium
                 color: Theme.surfaceText
@@ -75,15 +75,15 @@ PluginSettings {
 
             ToggleSetting {
                 settingKey: "neteaseEnabled"
-                label: "网易云音乐"
-                description: "优先使用，对中文歌曲支持更好"
+                label: I18n.tr("网易云音乐")
+                description: I18n.tr("优先使用，对中文歌曲支持更好")
                 defaultValue: true
             }
 
             ToggleSetting {
                 settingKey: "lrclibEnabled"
-                label: "lrclib.net"
-                description: "开源歌词库，作为网易云的后备源"
+                label: I18n.tr("lrclib.net")
+                description: I18n.tr("开源歌词库，作为网易云的后备源")
                 defaultValue: true
             }
         }
@@ -103,7 +103,7 @@ PluginSettings {
             spacing: Theme.spacingM
 
             StyledText {
-                text: "自定义 API"
+                text: I18n.tr("自定义 API")
                 font.pixelSize: Theme.fontSizeMedium
                 font.weight: Font.Medium
                 color: Theme.surfaceText

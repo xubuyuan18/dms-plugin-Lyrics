@@ -1059,9 +1059,9 @@ PluginComponent {
 
         // 网易云指示器 - 带图标的圆角矩形（优先显示）
         Rectangle {
-            width: 56
-            height: 24
-            radius: 12
+            width: 64
+            height: 28
+            radius: 6
             color: Theme.withAlpha(root._apiStatusColor(root.neteaseStatus), 0.25)
             border.color: root._apiStatusColor(root.neteaseStatus)
             border.width: 1
@@ -1072,14 +1072,14 @@ PluginComponent {
 
                 DankIcon {
                     name: "cloud"
-                    size: 14
+                    size: 16
                     color: root._apiStatusColor(root.neteaseStatus)
                     anchors.verticalCenter: parent.verticalCenter
                 }
 
                 StyledText {
                     text: "网易"
-                    font.pixelSize: 11
+                    font.pixelSize: 12
                     color: root._apiStatusColor(root.neteaseStatus)
                     font.weight: Font.Bold
                     anchors.verticalCenter: parent.verticalCenter
@@ -1099,9 +1099,9 @@ PluginComponent {
 
         // lrclib 指示器 - 带图标的圆角矩形
         Rectangle {
-            width: 56
-            height: 24
-            radius: 12
+            width: 64
+            height: 28
+            radius: 6
             color: Theme.withAlpha(root._apiStatusColor(root.lrclibStatus), 0.25)
             border.color: root._apiStatusColor(root.lrclibStatus)
             border.width: 1
@@ -1112,14 +1112,14 @@ PluginComponent {
 
                 DankIcon {
                     name: "library_music"
-                    size: 14
+                    size: 16
                     color: root._apiStatusColor(root.lrclibStatus)
                     anchors.verticalCenter: parent.verticalCenter
                 }
 
                 StyledText {
                     text: "LRC"
-                    font.pixelSize: 11
+                    font.pixelSize: 12
                     color: root._apiStatusColor(root.lrclibStatus)
                     font.weight: Font.Bold
                     anchors.verticalCenter: parent.verticalCenter
@@ -1139,9 +1139,9 @@ PluginComponent {
 
         // 缓存指示器 - 带图标的圆角矩形
         Rectangle {
-            width: 56
-            height: 24
-            radius: 12
+            width: 64
+            height: 28
+            radius: 6
             color: Theme.withAlpha(root._apiStatusColor(root.cacheStatus), 0.25)
             border.color: root._apiStatusColor(root.cacheStatus)
             border.width: 1
@@ -1152,14 +1152,14 @@ PluginComponent {
 
                 DankIcon {
                     name: "storage"
-                    size: 14
+                    size: 16
                     color: root._apiStatusColor(root.cacheStatus)
                     anchors.verticalCenter: parent.verticalCenter
                 }
 
                 StyledText {
                     text: "缓存"
-                    font.pixelSize: 11
+                    font.pixelSize: 12
                     color: root._apiStatusColor(root.cacheStatus)
                     font.weight: Font.Bold
                     anchors.verticalCenter: parent.verticalCenter

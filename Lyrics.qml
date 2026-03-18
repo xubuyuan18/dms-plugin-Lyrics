@@ -824,13 +824,39 @@ PluginComponent {
         return title === root._lastFetchedTrack && artist === root._lastFetchedArtist;
     }
 
+    /**
+     * 网易云歌曲匹配 - 支持大小写和空格模糊匹配
+     */
     function _findBestMatch(songs, expectedTitle) {
-        var lowerTitle = expectedTitle.toLowerCase();
+        // 标准化函数：转为小写并移除所有空格
+        function normalize(str) {
+            return str.toLowerCase().replace(/\s+/g, "");
+        }
+
+        var normalizedExpected = normalize(expectedTitle);
+
+        // 第一优先级：完全匹配（忽略大小写和空格）
         for (var i = 0; i < songs.length; i++) {
-            if (songs[i].name.toLowerCase() === lowerTitle) {
+            if (normalize(songs[i].name) === normalizedExpected) {
+                console.info("[Lyrics] 网易云: 精确匹配 \"" + songs[i].name + "\"");
                 return songs[i];
             }
         }
+
+        // 第二优先级：忽略大小写的包含匹配
+        var lowerExpected = expectedTitle.toLowerCase();
+        for (var j = 0; j < songs.length; j++) {
+            var songNameLower = songs[j].name.toLowerCase();
+            if (songNameLower === lowerExpected ||
+                songNameLower.indexOf(lowerExpected) !== -1 ||
+                lowerExpected.indexOf(songNameLower) !== -1) {
+                console.info("[Lyrics] 网易云: 模糊匹配 \"" + songs[j].name + "\"");
+                return songs[j];
+            }
+        }
+
+        // 默认返回第一首
+        console.info("[Lyrics] 网易云: 默认匹配 \"" + songs[0].name + "\"");
         return songs[0];
     }
 
@@ -872,6 +898,35 @@ PluginComponent {
     // LRC parser
     // -------------------------------------------------------------------------
 
+    /**
+     * 检查是否为纯音乐标记
+     * 支持多种变体："纯音乐，请欣赏"、"纯音乐 请欣赏"、"Instrumental"等
+     */
+    function _isInstrumentalMarker(text) {
+        if (!text || text.trim() === "") return false;
+
+        var normalized = text.toLowerCase().replace(/[\s,，]+/g, "").trim();
+
+        // 中文纯音乐标记
+        var instrumentalPatterns = [
+            "纯音乐请欣赏",
+            "纯音乐",
+            "instrumental",
+            "musiconly",
+            "nomusic",
+            "无歌词",
+            "暂无歌词"
+        ];
+
+        for (var i = 0; i < instrumentalPatterns.length; i++) {
+            if (normalized.indexOf(instrumentalPatterns[i]) !== -1) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     function parseLrc(lrcText) {
         var timeRegex = /\[(\d{2}):(\d{2})\.(\d{2,3})\]/;
         var result = lrcText.split("\n").reduce(function (acc, rawLine) {
@@ -884,9 +939,17 @@ PluginComponent {
             var millis = parseInt(match[3]);
             if (match[3].length === 2)
                 millis *= 10;
+
+            var text = line.replace(/\[\d{2}:\d{2}\.\d{2,3}\]/g, "").trim();
+
+            // 跳过纯音乐标记行
+            if (_isInstrumentalMarker(text)) {
+                return acc;
+            }
+
             acc.push({
                 time: parseInt(match[1]) * 60 + parseInt(match[2]) + millis / 1000,
-                text: line.replace(/\[\d{2}:\d{2}\.\d{2,3}\]/g, "").trim()
+                text: text
             });
             return acc;
         }, []);
@@ -1360,94 +1423,6 @@ PluginComponent {
                                     width: parent.width
                                     spacing: 4
                                     visible: root.activePlayer && root.currentDuration > 0
-
-                                // ============================================
-                                // Volume Control - 音量控制
-                                // ============================================
-                                // 设计说明：
-                                // - 位置：进度条上方
-                                // - 宽度：比进度条短一些（80%宽度）
-                                // - 包含音量图标和可拖动的音量条
-                                // ============================================
-                                Row {
-                                    width: parent.width * 0.8
-                                    anchors.horizontalCenter: parent.horizontalCenter
-                                    spacing: Theme.spacingS
-                                    visible: root.activePlayer
-
-                                    // 音量图标
-                                    DankIcon {
-                                        id: volumeIcon
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        name: {
-                                            if (!root.activePlayer || !root.activePlayer.hasOwnProperty('volume') || root.activePlayer.volume === undefined) return "volume_mute";
-                                            var vol = root.activePlayer.volume || 0;
-                                            if (vol === 0) return "volume_mute";
-                                            if (vol < 0.3) return "volume_down";
-                                            return "volume_up";
-                                        }
-                                        size: Theme.iconSizeSmall
-                                        color: root.activePlayer && root.activePlayer.hasOwnProperty('volume') && root.activePlayer.volume !== undefined ? Theme.surfaceVariantText : Theme.surfaceContainerHighest
-                                    }
-
-                                    // 音量条
-                                    Item {
-                                        id: volumeBar
-                                        width: parent.width - volumeIcon.width - parent.spacing
-                                        height: 24
-                                        anchors.verticalCenter: parent.verticalCenter
-
-                                        property real volume: root.activePlayer && root.activePlayer.canControl && root.activePlayer.hasOwnProperty('volume') ? (root.activePlayer.volume || 0) : 0
-
-                                        // 背景轨道
-                                        Rectangle {
-                                            anchors.verticalCenter: parent.verticalCenter
-                                            width: parent.width
-                                            height: 10
-                                            radius: 5
-                                            color: Theme.surfaceContainerHighest
-                                        }
-
-                                        // 音量填充
-                                        Rectangle {
-                                            anchors.verticalCenter: parent.verticalCenter
-                                            anchors.left: parent.left
-                                            width: parent.width * volumeBar.volume
-                                            height: 10
-                                            radius: 5
-                                            color: Theme.primary
-                                            visible: root.activePlayer && root.activePlayer.canControl && root.activePlayer.hasOwnProperty('volume')
-                                        }
-
-                                        // 音量圆点
-                                        Rectangle {
-                                            anchors.verticalCenter: parent.verticalCenter
-                                            x: parent.width * volumeBar.volume - width / 2
-                                            width: 14
-                                            height: 14
-                                            radius: 7
-                                            color: Theme.surface
-                                            border.color: Theme.outlineVariant
-                                            border.width: 1
-                                            visible: root.activePlayer && root.activePlayer.canControl && root.activePlayer.hasOwnProperty('volume')
-                                        }
-
-                                        // 点击和拖动调整音量
-                                        MouseArea {
-                                            anchors.fill: parent
-                                            onClicked: (mouse) => {
-                                                if (!root.activePlayer || !root.activePlayer.canControl || !root.activePlayer.hasOwnProperty('volume')) return;
-                                                var newVolume = Math.max(0, Math.min(1, mouse.x / parent.width));
-                                                root.activePlayer.volume = newVolume;
-                                            }
-                                            onPositionChanged: (mouse) => {
-                                                if (!pressed || !root.activePlayer || !root.activePlayer.canControl || !root.activePlayer.hasOwnProperty('volume')) return;
-                                                var newVolume = Math.max(0, Math.min(1, mouse.x / parent.width));
-                                                root.activePlayer.volume = newVolume;
-                                            }
-                                        }
-                                    }
-                                }
 
                                 // ============================================
                                 // macOS Style Progress Bar

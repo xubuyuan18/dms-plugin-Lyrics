@@ -4,21 +4,15 @@
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![DMS](https://img.shields.io/badge/DankMaterialShell-1.4+-purple)
 
-一个还在开发中的的音乐歌词插件，为 [DankMaterialShell](https://danklinux.com/) 提供实时同步歌词显示。
+实时歌词显示插件，支持多源获取与智能匹配。
 
-## 功能特性
+## 功能
 
-- 🎵 **多源歌词** - 自定义 API、本地缓存、lrclib.net、网易云音乐
-- 🔄 **实时同步** - 根据 MPRIS 播放进度自动高亮歌词
-- 💾 **本地缓存** - 自动缓存歌词到 `~/.cache/Lyrics/`
-- 🎨 **现代 UI** - 圆形专辑封面，支持横向/纵向 Bar
-- 🎛️ **播放控制** - 上一首/播放/暂停/下一首
-
-## 截图
-<img width="656" height="498" alt="Screenshot from 2026-03-18 00-06-22" src="https://github.com/user-attachments/assets/327ea1a2-5aab-469a-983f-b59f4f13118e" />
-
-
-
+- **多源歌词** - 自定义 API、本地缓存、lrclib.net、网易云音乐
+- **专辑匹配** - 智能匹配歌曲版本，提升准确性
+- **实时同步** - 基于 MPRIS 播放进度自动滚动
+- **本地缓存** - 自动缓存至 `~/.cache/Lyrics/`
+- **播放控制** - 集成上一首/播放/暂停/下一首
 
 ## 安装
 
@@ -28,18 +22,43 @@ git clone https://github.com/xubuyuan18/dms-plugin-Lyrics.git Lyrics
 dms ipc call plugins reload Lyrics
 ```
 
-## 设置
+## 项目结构
+
+```
+Lyrics/
+├── Lyrics.qml          # 主组件：歌词获取、UI、播放控制
+├── LyricsSettings.qml  # 设置界面
+├── plugin.json         # 插件配置
+├── README.md
+└── LICENSE
+```
+
+## 配置
 
 | 类别 | 选项 | 说明 |
 |------|------|------|
-| 缓存 | 本地缓存 | 加速加载，减少网络请求 |
+| 缓存 | 本地缓存 | 启用磁盘缓存，加速加载 |
 | 内置源 | 网易云音乐 | 中文歌曲优先 |
 | 内置源 | lrclib.net | 开源歌词库，后备源 |
-| 自定义 API | 启用/地址/请求方式 | 支持变量: `{title}`, `{artist}`, `{album}` |
+| 自定义 API | 地址/方法 | 支持变量 `{title}`, `{artist}`, `{album}` |
 
-**歌词获取优先级**: 自定义 API → 本地缓存 → 网易云音乐 → lrclib.net
+**获取优先级**: 自定义 API → 本地缓存 → 网易云音乐 → lrclib.net
 
-**自定义 API 响应格式**:
+### 自定义 API 配置
+
+**URL 格式**:
+```
+https://api.example.com/lyrics?title={title}&artist={artist}&album={album}
+```
+
+**请求方式**: GET 或 POST
+
+**变量说明**:
+- `{title}` - 歌曲名（自动 URL 编码）
+- `{artist}` - 艺术家（自动 URL 编码）
+- `{album}` - 专辑名（自动 URL 编码）
+
+**响应格式**:
 ```json
 {
   "lyrics": "[00:00.00]歌词内容...",
@@ -50,28 +69,43 @@ dms ipc call plugins reload Lyrics
 }
 ```
 
-## 使用
+**示例**:
+- URL: `https://lrclib.net/api/get?track_name={title}&artist_name={artist}`
+- 方法: `GET`
 
-- **横向 Bar**: 显示圆形专辑封面 + 当前歌词/歌曲名
-- **纵向 Bar**: 显示歌词图标
-- **弹出面板**: 专辑封面、歌曲信息、播放控制、歌词源状态
+## 功能实现
 
-## 文件结构
+### 歌词获取流程
+1. 检测歌曲切换（MPRIS 事件）
+2. 优先级获取：自定义 API → 缓存 → 网易云 → lrclib
+3. 解析 LRC 格式，建立时间索引
+4. 定时轮询播放位置，匹配当前歌词行
 
+### 专辑匹配算法
 ```
-musicLyrics/
-├── Lyrics.qml          # 主组件
-├── LyricsSettings.qml  # 设置界面
-├── plugin.json         # 插件配置
-├── README.md
-└── LICENSE
+1. 歌曲名完全匹配 + 专辑匹配
+2. 歌曲名完全匹配（忽略大小写/空格）
+3. 歌曲名模糊匹配 + 专辑匹配
+4. 歌曲名模糊匹配（包含关系）
+5. 默认返回第一首
 ```
+
+### 缓存机制
+- 缓存路径: `~/.cache/Lyrics/`
+- 文件名: `fnv1a32(title + "\0" + artist).json`
+- 内容: `{lines, source, cachedAt}`
+
+### 纯音乐检测
+自动过滤包含以下标记的歌词行：
+- 纯音乐，请欣赏
+- Instrumental
+- 无歌词 / 暂无歌词
+
+## 界面
+
+- **状态栏** - 专辑封面 + 当前歌词
+- **弹出面板** - 黑胶唱片封面、歌曲信息、播放控制、歌词源状态
 
 ## 许可证
 
 [MIT](./LICENSE)
-
----
-
-**作者:** xubuyuan18  
-**项目地址:** https://github.com/xubuyuan18/dms-plugin-Lyrics

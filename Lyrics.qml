@@ -1380,14 +1380,14 @@ PluginComponent {
                                         id: volumeIcon
                                         anchors.verticalCenter: parent.verticalCenter
                                         name: {
-                                            if (!root.activePlayer) return "volume_mute";
+                                            if (!root.activePlayer || !root.activePlayer.hasOwnProperty('volume') || root.activePlayer.volume === undefined) return "volume_mute";
                                             var vol = root.activePlayer.volume || 0;
                                             if (vol === 0) return "volume_mute";
                                             if (vol < 0.3) return "volume_down";
                                             return "volume_up";
                                         }
                                         size: Theme.iconSizeSmall
-                                        color: Theme.surfaceVariantText
+                                        color: root.activePlayer && root.activePlayer.hasOwnProperty('volume') && root.activePlayer.volume !== undefined ? Theme.surfaceVariantText : Theme.surfaceContainerHighest
                                     }
 
                                     // 音量条
@@ -1397,7 +1397,7 @@ PluginComponent {
                                         height: 24
                                         anchors.verticalCenter: parent.verticalCenter
 
-                                        property real volume: root.activePlayer ? (root.activePlayer.volume || 0) : 0
+                                        property real volume: root.activePlayer && root.activePlayer.canControl && root.activePlayer.hasOwnProperty('volume') ? (root.activePlayer.volume || 0) : 0
 
                                         // 背景轨道
                                         Rectangle {
@@ -1416,6 +1416,7 @@ PluginComponent {
                                             height: 10
                                             radius: 5
                                             color: Theme.primary
+                                            visible: root.activePlayer && root.activePlayer.canControl && root.activePlayer.hasOwnProperty('volume')
                                         }
 
                                         // 音量圆点
@@ -1428,18 +1429,19 @@ PluginComponent {
                                             color: Theme.surface
                                             border.color: Theme.outlineVariant
                                             border.width: 1
+                                            visible: root.activePlayer && root.activePlayer.canControl && root.activePlayer.hasOwnProperty('volume')
                                         }
 
                                         // 点击和拖动调整音量
                                         MouseArea {
                                             anchors.fill: parent
                                             onClicked: (mouse) => {
-                                                if (!root.activePlayer) return;
+                                                if (!root.activePlayer || !root.activePlayer.canControl || !root.activePlayer.hasOwnProperty('volume')) return;
                                                 var newVolume = Math.max(0, Math.min(1, mouse.x / parent.width));
                                                 root.activePlayer.volume = newVolume;
                                             }
                                             onPositionChanged: (mouse) => {
-                                                if (!pressed || !root.activePlayer) return;
+                                                if (!pressed || !root.activePlayer || !root.activePlayer.canControl || !root.activePlayer.hasOwnProperty('volume')) return;
                                                 var newVolume = Math.max(0, Math.min(1, mouse.x / parent.width));
                                                 root.activePlayer.volume = newVolume;
                                             }

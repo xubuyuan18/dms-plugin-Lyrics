@@ -10,6 +10,8 @@
 
 - **状态栏** - 专辑封面 + 当前歌词
 - **弹出面板** - 黑胶唱片封面、歌曲信息、播放控制、歌词源状态
+- <img width="635" height="580" alt="Lyrics Plugin" src="https://github.com/user-attachments/assets/811cd9b1-0f10-4e56-8f76-28d63bbfc733" />
+
 
 ## 功能
 

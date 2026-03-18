@@ -108,13 +108,15 @@ PluginComponent {
     // 计算属性
     // ============================================
     property string currentLyricText: {
-        if (lyricsLoading)
-            return I18n.tr("搜索歌词中…");
-        if (lyricsLines.length > 0 && currentLineIndex >= 0)
-            return lyricsLines[currentLineIndex].text || I18n.tr("♪ ♪ ♪");
-        if (currentTitle)
-            return currentTitle;
-        return I18n.tr("暂无歌词");
+        // 处理歌曲名：去掉括号及括号内容
+        var title = currentTitle || I18n.tr("暂无歌词");
+        title = title.replace(/[（(].*?[）)]/g, "");  // 去掉括号及内容
+        
+        // 如果有歌词，显示"歌曲名 歌词"
+        if (lyricsLines.length > 0 && currentLineIndex >= 0 && lyricsLines[currentLineIndex].text) {
+            return title + "  " + lyricsLines[currentLineIndex].text;
+        }
+        return title;
     }
 
     // ============================================
@@ -1086,7 +1088,7 @@ PluginComponent {
                 anchors.verticalCenter: parent.verticalCenter
                 maximumLineCount: 1
                 elide: Text.ElideRight
-                width: Math.min(implicitWidth, 300)
+                width: Math.min(implicitWidth, 500)  // 增加最大长度到500
             }
         }
     }
@@ -1325,9 +1327,9 @@ PluginComponent {
 
                                 // 中心专辑封面容器
                                 Rectangle {
-                                    width: 80
-                                    height: 80
-                                    radius: 40
+                                    width: 130
+                                    height: 130
+                                    radius: 65
                                     anchors.centerIn: parent
                                     color: "#1a1a1a"  // 中心深色背景
                                     clip: true

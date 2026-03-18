@@ -1560,16 +1560,16 @@ PluginComponent {
     function _apiStatusColor(statusVal) {
         switch (statusVal) {
             case status.error:
-                return Theme.error;      // 红色
+                return "#FF5252";      // 鲜艳红色
             case status.searching:
-                return Theme.warning;    // 黄色
+                return "#FFD740";      // 鲜艳琥珀色
             case status.found:
             case status.cacheHit:
-                return Theme.success;    // 绿色
+                return "#69F0AE";      // 鲜艳绿色
             case status.none:
             case status.skippedConfig:
             default:
-                return Theme.surfaceVariantText; // 灰色
+                return "#9E9E9E";      // 中灰色
         }
     }
 

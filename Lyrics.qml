@@ -8,9 +8,17 @@ import qs.Services
 import qs.Widgets
 import qs.Modules.Plugins
 
+/**
+ * Lyrics Plugin for DankMaterialShell
+ * 提供多源歌词获取和显示功能
+ */
+
 PluginComponent {
     id: root
 
+    // ============================================
+    // 配置属性
+    // ============================================
     property bool cachingEnabled: pluginData.cachingEnabled ?? true
     property bool lrclibEnabled: pluginData.lrclibEnabled ?? true
     property bool neteaseEnabled: pluginData.neteaseEnabled ?? true
@@ -18,15 +26,17 @@ PluginComponent {
     property string customApiUrl: pluginData.customApiUrl ?? ""
     property string customApiMethod: pluginData.customApiMethod ?? "GET"
 
+    // ============================================
+    // MPRIS 播放器
+    // ============================================
     readonly property MprisPlayer activePlayer: MprisController.activePlayer
     property var allPlayers: MprisController.availablePlayers
 
-    // -------------------------------------------------------------------------
-    // Enum namespaces
-    // -------------------------------------------------------------------------
+    // ============================================
+    // 状态枚举
+    // ============================================
 
-    // Chip-visible statuses for navidromeStatus, lrclibStatus, and cacheStatus.
-    // Values are globally unique so all three properties share one _chipMeta map.
+    // 状态码（用于 lrclibStatus, neteaseStatus, cacheStatus）
     QtObject {
         id: status
         readonly property int none: 0
@@ -42,7 +52,7 @@ PluginComponent {
         readonly property int cacheDisabled: 10
     }
 
-    // Lyrics-fetch lifecycle.
+    // 歌词获取生命周期
     QtObject {
         id: lyricState
         readonly property int idle: 0
@@ -51,7 +61,7 @@ PluginComponent {
         readonly property int notFound: 3
     }
 
-    // Lyrics sources.
+    // 歌词来源
     QtObject {
         id: lyricSrc
         readonly property int none: 0
@@ -61,36 +71,41 @@ PluginComponent {
         readonly property int custom: 4
     }
 
-    // -------------------------------------------------------------------------
-    // Lyrics state
-    // -------------------------------------------------------------------------
-
+    // ============================================
+    // 歌词状态
+    // ============================================
     property var lyricsLines: []
     property int currentLineIndex: -1
     property bool lyricsLoading: lyricStatus === lyricState.loading
+
+    // 内部状态跟踪
     property string _lastFetchedTrack: ""
     property string _lastFetchedArtist: ""
     property string _lastSyncedTrack: ""
     property string _lastSyncedArtist: ""
     property var _cancelActiveFetch: null
 
-    // Chip status properties
+    // 各源状态
     property int lrclibStatus: status.none
     property int neteaseStatus: status.none
     property int cacheStatus: status.none
 
-    // Fetch state and source
+    // 当前状态
     property int lyricStatus: lyricState.idle
     property int lyricSource: lyricSrc.none
 
-    // Track current song info
+    // 当前歌曲信息
     property string currentTitle: activePlayer?.trackTitle ?? ""
     property string currentArtist: activePlayer?.trackArtist ?? ""
     property string currentAlbum: activePlayer?.trackAlbum ?? ""
     property real currentDuration: activePlayer?.length ?? 0
 
-    // Current lyric line for bar pill display
+    // 强制更新标志（用于轮询）
+    property bool _forceUpdate: false
 
+    // ============================================
+    // 计算属性
+    // ============================================
     property string currentLyricText: {
         if (lyricsLoading)
             return "搜索歌词中…";
@@ -101,22 +116,43 @@ PluginComponent {
         return "暂无歌词";
     }
 
-    // Debounce timer — avoids double-fetch when title and artist change simultaneously
+    // ============================================
+    // 定时器
+    // ============================================
+
+    // 防抖定时器 - 避免标题和艺术家同时变化时重复获取
     Timer {
         id: fetchDebounceTimer
         interval: 300
         onTriggered: root.fetchLyricsIfNeeded()
     }
+
     onCurrentTitleChanged: fetchDebounceTimer.restart()
     onCurrentArtistChanged: fetchDebounceTimer.restart()
 
-    // Force-update toggle to poll MPRIS position
-    property bool _forceUpdate: false
+    // XHR 超时定时器
+    Timer {
+        id: xhrTimeoutTimer
+        repeat: false
+        property var onTimeout: null
+        onTriggered: if (onTimeout) onTimeout()
+    }
 
-    // -------------------------------------------------------------------------
-    // Helpers
-    // -------------------------------------------------------------------------
+    // XHR 重试定时器
+    Timer {
+        id: xhrRetryTimer
+        repeat: false
+        property var onRetry: null
+        onTriggered: if (onRetry) onRetry()
+    }
 
+    // ============================================
+    // 状态管理函数
+    // ============================================
+
+    /**
+     * 重置歌词状态（保留 _lastFetchedTrack/_lastFetchedArtist）
+     */
     function _resetLyricsState() {
         lyricsLines = [];
         currentLineIndex = -1;
@@ -125,24 +161,40 @@ PluginComponent {
         cacheStatus = status.none;
         lyricStatus = lyricState.loading;
         lyricSource = lyricSrc.none;
-        // 注意：不重置 _lastFetchedTrack 和 _lastFetchedArtist
-        // 这样可以在 fetchLyricsIfNeeded 中判断是否需要重新搜索
     }
 
-    // Sets the final "no synced lyrics" state after all sources exhausted
+    /**
+     * 设置最终"未找到"状态
+     */
     function _setFinalNotFound(sourceStatusVal) {
         lrclibStatus = sourceStatusVal;
         neteaseStatus = sourceStatusVal;
         lyricStatus = lyricState.notFound;
         root._cancelActiveFetch = null;
-        // 注意：不重置 _lastFetchedTrack，这样再次播放同一首歌时
-        // fetchLyricsIfNeeded 会检查到歌曲相同但状态是 notFound，从而允许重新搜索
     }
 
-    // -------------------------------------------------------------------------
-    // Cache helpers
-    // -------------------------------------------------------------------------
+    // ============================================
+    // 缓存管理
+    // ============================================
 
+    readonly property string _cacheDir: (Quickshell.env("HOME") || "") + "/.cache/Lyrics"
+    property bool _cacheDirReady: false
+
+    Process {
+        id: mkdirProcess
+        command: ["mkdir", "-p", root._cacheDir]
+        running: false
+    }
+
+    function _ensureCacheDir() {
+        if (_cacheDirReady) return;
+        _cacheDirReady = true;
+        mkdirProcess.running = true;
+    }
+
+    /**
+     * FNV-1a 32位哈希
+     */
     function _fnv1a32(str) {
         var hash = 0x811c9dc5;
         for (var i = 0; i < str.length; i++) {
@@ -155,47 +207,35 @@ PluginComponent {
         return _fnv1a32((title + "\x00" + artist).toLowerCase());
     }
 
-    readonly property string _cacheDir: (Quickshell.env("HOME") || "") + "/.cache/Lyrics"
-
     function _cacheFilePath(title, artist) {
         return _cacheDir + "/" + _cacheKey(title, artist) + ".json";
     }
 
-    // Static one-shot timer for XHR request timeouts
-    Timer {
-        id: xhrTimeoutTimer
-        repeat: false
-        property var onTimeout: null
-        onTriggered: if (onTimeout)
-            onTimeout()
+    /**
+     * 从缓存读取歌词
+     */
+    function readFromCache(title, artist, callback) {
+        cacheReaderComponent.createObject(root, {
+            path: _cacheFilePath(title, artist),
+            callback: callback
+        });
     }
 
-    // Static one-shot timer for retry delays
-    Timer {
-        id: xhrRetryTimer
-        repeat: false
-        property var onRetry: null
-        onTriggered: if (onRetry)
-            onRetry()
+    /**
+     * 写入缓存
+     */
+    function writeToCache(title, artist, lines, source) {
+        _ensureCacheDir();
+        cacheWriterComponent.createObject(root, {
+            path: _cacheFilePath(title, artist),
+            cTitle: title,
+            cArtist: artist,
+            cLines: lines,
+            cSource: source
+        });
     }
 
-    // Cache directory creation
-    property bool _cacheDirReady: false
-
-    Process {
-        id: mkdirProcess
-        command: ["mkdir", "-p", root._cacheDir]
-        running: false
-    }
-
-    function _ensureCacheDir() {
-        if (_cacheDirReady)
-            return;
-        _cacheDirReady = true;
-        mkdirProcess.running = true;
-    }
-
-    // Cache read using FileView
+    // 缓存读取组件
     Component {
         id: cacheReaderComponent
         FileView {
@@ -217,36 +257,28 @@ PluginComponent {
         }
     }
 
-    function readFromCache(title, artist, callback) {
-        cacheReaderComponent.createObject(root, {
-            path: _cacheFilePath(title, artist),
-            callback: callback
-        });
-    }
-
-    function writeToCache(title, artist, lines, source) {
-        _ensureCacheDir();
-        var writer = cacheWriterComponent.createObject(root, {
-            path: _cacheFilePath(title, artist),
-            cTitle: title,
-            cArtist: artist
-        });
-        writer.setText(JSON.stringify({
-            lines: lines,
-            source: source
-        }));
-    }
-
-    // Cache write using FileView
+    // 缓存写入组件
     Component {
         id: cacheWriterComponent
         FileView {
             property string cTitle
             property string cArtist
+            property var cLines
+            property int cSource
+
             blockWrites: false
             atomicWrites: true
+
+            Component.onCompleted: {
+                setText(JSON.stringify({
+                    lines: cLines,
+                    source: cSource,
+                    cachedAt: new Date().toISOString()
+                }));
+            }
+
             onSaved: {
-                console.info("[Lyrics] 缓存: 已保存 \"" + cTitle + "\" 的歌词 (" + path + ")");
+                console.info("[Lyrics] 缓存: 已保存 \"" + cTitle + "\" 的歌词 (" + cLines.length + " 行)");
                 destroy();
             }
             onSaveFailed: {
@@ -256,19 +288,25 @@ PluginComponent {
         }
     }
 
-    // -------------------------------------------------------------------------
-    // Fetch orchestration
-    // -------------------------------------------------------------------------
+    // ============================================
+    // 歌词获取协调
+    // ============================================
 
+    /**
+     * 主入口：检查并获取歌词
+     * 优先级：自定义API → 缓存 → 网易云 → lrclib
+     */
     function fetchLyricsIfNeeded() {
-        if (!currentTitle)
-            return;
-        // 修复：如果歌曲相同且已找到歌词（synced），则跳过搜索
-        // 其他情况（idle, loading, notFound）都允许重新搜索
-        if (currentTitle === _lastFetchedTrack && currentArtist === _lastFetchedArtist && lyricStatus === lyricState.synced)
-            return;
+        if (!currentTitle) return;
 
-        // Cancel any in-flight XHR before starting fresh
+        // 如果歌曲相同且已同步，跳过
+        if (currentTitle === _lastFetchedTrack &&
+            currentArtist === _lastFetchedArtist &&
+            lyricStatus === lyricState.synced) {
+            return;
+        }
+
+        // 取消进行中的请求
         if (_cancelActiveFetch) {
             _cancelActiveFetch();
             _cancelActiveFetch = null;
@@ -278,80 +316,95 @@ PluginComponent {
         _lastFetchedArtist = currentArtist;
         _resetLyricsState();
 
-        var durationStr = currentDuration > 0 ? (Math.floor(currentDuration / 60) + ":" + ("0" + Math.floor(currentDuration % 60)).slice(-2)) : "未知";
-        console.info("[Lyrics] ▶ 歌曲切换: \"" + currentTitle + "\" - " + currentArtist + (currentAlbum ? " [" + currentAlbum + "]" : "") + " (" + durationStr + ")");
+        _logSongChange();
 
         var capturedTitle = currentTitle;
         var capturedArtist = currentArtist;
 
-        function _startFetch() {
-            // 优先使用网易云 API（对中文歌支持更好）
-            if (neteaseEnabled) {
-                _fetchFromNetease(capturedTitle, capturedArtist);
-            } else {
-                lrclibStatus = status.skippedConfig;
-                _fetchFromLrclib(capturedTitle, capturedArtist);
-            }
-        }
-
-        function _fetchFromLrclibFallback(title, artist) {
-            _fetchFromLrclib(title, artist);
-        }
-
-        // 如果启用了自定义 API，优先尝试
+        // 优先级1：自定义API
         if (customApiEnabled && customApiUrl) {
             _fetchFromCustomApi(capturedTitle, capturedArtist);
             return;
         }
 
-        // 尝试缓存
+        // 优先级2：缓存
         if (cachingEnabled) {
-            readFromCache(capturedTitle, capturedArtist, function (cached) {
-                // Guard: track may have changed while the file read was in progress
-                if (capturedTitle !== root._lastFetchedTrack || capturedArtist !== root._lastFetchedArtist)
-                    return;
-                if (cached && cached.lines && cached.lines.length > 0) {
-                    root.lyricsLines = cached.lines;
-                    root.lyricStatus = lyricState.synced;
-                    root.lyricSource = cached.source > 0 ? cached.source : lyricSrc.cache;
-                    root.cacheStatus = status.cacheHit;
-                    root.lrclibStatus = status.skippedFound;
-                    root.neteaseStatus = status.skippedFound;
-                    root._lastSyncedTrack = capturedTitle;
-                    root._lastSyncedArtist = capturedArtist;
-                    console.info("[Lyrics] ✓ 缓存: 已加载 \"" + capturedTitle + "\" 的歌词 (" + cached.lines.length + " 行)");
-                    return;
-                }
-                root.cacheStatus = status.cacheMiss;
-                _startFetch();
-            });
+            _tryCacheThenFetch(capturedTitle, capturedArtist);
         } else {
             cacheStatus = status.cacheDisabled;
-            _startFetch();
+            _startFetchFromSources(capturedTitle, capturedArtist);
         }
     }
 
-    function _startFetch() {
-        // 根据启用的源按顺序获取
-        if (lrclibEnabled) {
-            _fetchFromLrclib(_lastFetchedTrack, _lastFetchedArtist);
-        } else if (neteaseEnabled) {
-            lrclibStatus = status.skippedConfig;
-            _fetchFromNetease(_lastFetchedTrack, _lastFetchedArtist);
+    /**
+     * 尝试从缓存读取，失败则从源获取
+     */
+    function _tryCacheThenFetch(title, artist) {
+        readFromCache(title, artist, function (cached) {
+            // 守卫：歌曲已切换
+            if (title !== root._lastFetchedTrack || artist !== root._lastFetchedArtist) return;
+
+            if (cached?.lines?.length > 0) {
+                _applyCachedLyrics(cached, title, artist);
+                return;
+            }
+
+            root.cacheStatus = status.cacheMiss;
+            _startFetchFromSources(title, artist);
+        });
+    }
+
+    /**
+     * 应用缓存的歌词
+     */
+    function _applyCachedLyrics(cached, title, artist) {
+        root.lyricsLines = cached.lines;
+        root.lyricStatus = lyricState.synced;
+        root.lyricSource = cached.source > 0 ? cached.source : lyricSrc.cache;
+        root.cacheStatus = status.cacheHit;
+        root.lrclibStatus = status.skippedFound;
+        root.neteaseStatus = status.skippedFound;
+        root._lastSyncedTrack = title;
+        root._lastSyncedArtist = artist;
+        console.info("[Lyrics] ✓ 缓存: 已加载 \"" + title + "\" 的歌词 (" + cached.lines.length + " 行)");
+    }
+
+    /**
+     * 从各源获取歌词（网易云优先）
+     */
+    function _startFetchFromSources(title, artist) {
+        if (neteaseEnabled) {
+            _fetchFromNetease(title, artist);
         } else {
             lrclibStatus = status.skippedConfig;
-            neteaseStatus = status.skippedConfig;
-            _setFinalNotFound(status.notFound);
+            _fetchFromLrclib(title, artist);
         }
     }
 
-    // -------------------------------------------------------------------------
-    // XMLHttpRequest helper
-    // -------------------------------------------------------------------------
+    /**
+     * 记录歌曲切换日志
+     */
+    function _logSongChange() {
+        var durationStr = currentDuration > 0
+            ? (Math.floor(currentDuration / 60) + ":" + ("0" + Math.floor(currentDuration % 60)).slice(-2))
+            : "未知";
+        console.info("[Lyrics] ▶ 歌曲切换: \"" + currentTitle + "\" - " + currentArtist +
+                    (currentAlbum ? " [" + currentAlbum + "]" : "") + " (" + durationStr + ")");
+    }
 
+    // ============================================
+    // 网络请求工具
+    // ============================================
+
+    /**
+     * XHR 请求（带重试机制）
+     * @returns {Function} 取消函数
+     */
     function _xhrRequest(url, method, timeoutMs, onSuccess, onError, customHeaders, postData) {
-        var retriesLeft = 2;
-        var retryDelay = 3000;
+        const MAX_RETRIES = 2;
+        const RETRY_DELAY = 3000;
+
+        var retriesLeft = MAX_RETRIES;
         var attempt = 0;
         var cancelled = false;
         var currentXhr = null;
@@ -362,6 +415,7 @@ PluginComponent {
             currentXhr = new XMLHttpRequest();
             var done = false;
 
+            // 设置超时
             xhrTimeoutTimer.stop();
             xhrTimeoutTimer.interval = timeoutMs;
             xhrTimeoutTimer.onTimeout = function () {
@@ -373,32 +427,39 @@ PluginComponent {
             };
             xhrTimeoutTimer.start();
 
+            // 状态处理
             currentXhr.onreadystatechange = function () {
-                if (currentXhr.readyState !== XMLHttpRequest.DONE || done || cancelled)
-                    return;
+                if (currentXhr.readyState !== XMLHttpRequest.DONE || done || cancelled) return;
+
                 done = true;
                 xhrTimeoutTimer.stop();
+
                 if (currentXhr.status === 0) {
                     _retry("network error (status 0)");
                     return;
                 }
+
                 var responseBody = (currentXhr.responseText || "").trim();
                 if (responseBody.length === 0) {
                     _retry("empty response (HTTP " + currentXhr.status + ")");
                     return;
                 }
+
                 onSuccess(currentXhr.responseText, currentXhr.status);
             };
+
+            // 发送请求
             currentXhr.open(httpMethod, url);
+
             if (customHeaders) {
-                for (var key in customHeaders)
+                for (var key in customHeaders) {
                     currentXhr.setRequestHeader(key, customHeaders[key]);
+                }
             } else {
-                currentXhr.setRequestHeader("User-Agent", "DankMaterialShell Lyrics/1.5.0 (https://github.com/xubuyuan18/dms-plugin-Lyrics)");
+                currentXhr.setRequestHeader("User-Agent", "DankMaterialShell Lyrics/1.5.0");
                 currentXhr.setRequestHeader("Accept", "application/json");
             }
-            
-            // 发送请求
+
             if (httpMethod === "POST" && postData) {
                 currentXhr.setRequestHeader("Content-Type", "application/json");
                 currentXhr.send(JSON.stringify(postData));
@@ -408,13 +469,13 @@ PluginComponent {
         }
 
         function _retry(errMsg) {
-            if (cancelled)
-                return;
+            if (cancelled) return;
+
             if (retriesLeft > 0) {
                 retriesLeft--;
-                console.warn("[Lyrics] _xhrRequest: " + errMsg + " — retrying (attempt " + (attempt + 1) + ", " + retriesLeft + " left): " + url);
+                console.warn("[Lyrics] 请求失败，重试中 (" + (MAX_RETRIES - retriesLeft) + "/" + MAX_RETRIES + "): " + url);
                 xhrRetryTimer.stop();
-                xhrRetryTimer.interval = retryDelay;
+                xhrRetryTimer.interval = RETRY_DELAY;
                 xhrRetryTimer.onRetry = _attempt;
                 xhrRetryTimer.start();
             } else {
@@ -424,376 +485,298 @@ PluginComponent {
 
         _attempt();
 
-        // Return a cancel function the caller can invoke to abort the entire chain
         return function cancel() {
             cancelled = true;
             xhrTimeoutTimer.stop();
             xhrRetryTimer.stop();
-            if (currentXhr)
-                currentXhr.abort();
-            console.info("[Lyrics] ⊘ XHR cancelled: " + url);
+            if (currentXhr) currentXhr.abort();
         };
     }
 
-    // 兼容旧代码的 GET 请求辅助函数
     function _xhrGet(url, timeoutMs, onSuccess, onError, customHeaders) {
         return _xhrRequest(url, "GET", timeoutMs, onSuccess, onError, customHeaders, null);
     }
 
-    // -------------------------------------------------------------------------
-    // lrclib.net fetch
-    // -------------------------------------------------------------------------
+    // ============================================
+    // 歌词源：lrclib.net
+    // ============================================
 
     function _fetchFromLrclib(expectedTitle, expectedArtist) {
-        if (!lrclibEnabled) {
-            lrclibStatus = status.skippedConfig;
-            console.info("[Lyrics] lrclib: 已禁用，跳过");
-            // 尝试下一个源
-            if (neteaseEnabled) {
-                _fetchFromNetease(expectedTitle, expectedArtist);
-            } else {
-                _setFinalNotFound(status.notFound);
-            }
-            return;
-        }
-
-        if (lyricStatus === lyricState.synced) {
-            lrclibStatus = status.skippedFound;
-            console.info("[Lyrics] lrclib: 已跳过 (已找到同步歌词)");
-            return;
-        }
+        if (!_checkSourceEnabled("lrclib", lrclibEnabled, neteaseEnabled)) return;
+        if (_checkAlreadySynced("lrclib")) return;
 
         lrclibStatus = status.searching;
-        console.info("[Lyrics] lrclib: 正在搜索 \"" + expectedTitle + "\" - " + expectedArtist);
+        console.info("[Lyrics] lrclib: 正在搜索 \"" + expectedTitle + "\"");
 
-        var url = "https://lrclib.net/api/get?artist_name=" + encodeURIComponent(expectedArtist) + "&track_name=" + encodeURIComponent(expectedTitle);
-        if (currentAlbum)
-            url += "&album_name=" + encodeURIComponent(currentAlbum);
-        if (currentDuration > 0)
-            url += "&duration=" + Math.round(currentDuration);
+        var url = _buildLrclibUrl(expectedTitle, expectedArtist);
 
-        root._cancelActiveFetch = _xhrGet(url, 20000, function (responseText, httpStatus) {
-            var rawData = (responseText || "").trim();
-            console.log("[Lyrics] lrclib: response length = " + rawData.length);
-            if (rawData.length === 0) {
-                root._setFinalNotFound(status.error);
-                console.warn("[Lyrics] lrclib: empty response (HTTP " + httpStatus + ")");
-                return;
+        root._cancelActiveFetch = _xhrGet(url, 20000,
+            function (responseText, httpStatus) {
+                _handleLrclibResponse(responseText, expectedTitle, expectedArtist);
+            },
+            function (errMsg) {
+                _handleLrclibError(errMsg, expectedTitle, expectedArtist);
             }
-            try {
-                var result = JSON.parse(rawData);
-                if (result.statusCode === 404 || result.error) {
-                    root._setFinalNotFound(status.notFound);
-                    console.info("[Lyrics] ✗ lrclib: no lyrics found for \"" + expectedTitle + "\"");
-                } else if (result.syncedLyrics) {
-                    root.lyricsLines = root.parseLrc(result.syncedLyrics);
-                    root.lrclibStatus = status.found;
-                    root.lyricStatus = lyricState.synced;
-                    root.lyricSource = lyricSrc.lrclib;
-                    root._lastSyncedTrack = expectedTitle;
-                    root._lastSyncedArtist = expectedArtist;
-                    console.info("[Lyrics] ✓ lrclib: 已找到同步歌词 (" + root.lyricsLines.length + " 行) - \"" + expectedTitle + "\"");
-                    root._cancelActiveFetch = null;
-                    if (root.cachingEnabled)
-                        root.writeToCache(expectedTitle, expectedArtist, root.lyricsLines, lyricSrc.lrclib);
-                } else if (result.plainLyrics) {
-                    // Convert plain lyrics to synced format (all at time 0)
-                    var plainLines = result.plainLyrics.split("\n").map(function(line) {
-                        return { time: 0, text: line.trim() };
-                    }).filter(function(l) { return l.text !== ""; });
-                    if (plainLines.length > 0) {
-                        root.lyricsLines = plainLines;
-                        root.lrclibStatus = status.found;
-                        root.lyricStatus = lyricState.synced;
-                        root.lyricSource = lyricSrc.lrclib;
-                        console.info("[Lyrics] ✓ lrclib: 已找到纯文本歌词 (" + plainLines.length + " 行) - \"" + expectedTitle + "\"");
-                        root._cancelActiveFetch = null;
-                        if (root.cachingEnabled)
-                            root.writeToCache(expectedTitle, expectedArtist, plainLines, lyricSrc.lrclib);
-                    } else {
-                        root._setFinalNotFound(status.notFound);
-                        console.info("[Lyrics] ✗ lrclib: 纯文本歌词为空 - \"" + expectedTitle + "\"");
-                    }
-
-                } else {
-                    root.lrclibStatus = status.notFound;
-                    console.info("[Lyrics] ✗ lrclib: 未找到歌词 - \"" + expectedTitle + "\"，尝试网易云...");
-                    root._fetchFromNetease(expectedTitle, expectedArtist);
-                }
-            } catch (e) {
-                root.lrclibStatus = status.error;
-                console.warn("[Lyrics] lrclib: 解析响应失败 — " + e);
-                console.warn("[Lyrics] lrclib: 原始数据: " + rawData.substring(0, 200));
-                if (neteaseEnabled) {
-                    root._fetchFromNetease(expectedTitle, expectedArtist);
-                } else {
-                    _setFinalNotFound(status.error);
-                }
-            }
-        }, function (errMsg) {
-            root.lrclibStatus = status.error;
-            console.warn("[Lyrics] lrclib: 请求失败 — " + errMsg);
-            if (neteaseEnabled) {
-                root._fetchFromNetease(expectedTitle, expectedArtist);
-            } else {
-                _setFinalNotFound(status.error);
-            }
-        });
+        );
     }
 
-    // -------------------------------------------------------------------------
-    // Netease fetch (via music.163.com search + paugram lyrics)
-    // -------------------------------------------------------------------------
+    function _buildLrclibUrl(title, artist) {
+        var url = "https://lrclib.net/api/get?artist_name=" + encodeURIComponent(artist)
+                + "&track_name=" + encodeURIComponent(title);
+        if (currentAlbum) url += "&album_name=" + encodeURIComponent(currentAlbum);
+        if (currentDuration > 0) url += "&duration=" + Math.round(currentDuration);
+        return url;
+    }
+
+    function _handleLrclibResponse(responseText, expectedTitle, expectedArtist) {
+        var rawData = (responseText || "").trim();
+        if (rawData.length === 0) {
+            _fallbackAfterLrclib(status.error, "空响应", expectedTitle, expectedArtist);
+            return;
+        }
+
+        try {
+            var result = JSON.parse(rawData);
+
+            if (result.statusCode === 404 || result.error) {
+                _fallbackAfterLrclib(status.notFound, "未找到", expectedTitle, expectedArtist);
+                return;
+            }
+
+            if (result.syncedLyrics) {
+                _applyLyricsFromSource(result.syncedLyrics, lyricSrc.lrclib, expectedTitle, expectedArtist);
+                return;
+            }
+
+            if (result.plainLyrics) {
+                var plainLines = _plainTextToLines(result.plainLyrics);
+                if (plainLines.length > 0) {
+                    _applyLyricsLines(plainLines, lyricSrc.lrclib, expectedTitle, expectedArtist);
+                    return;
+                }
+            }
+
+            _fallbackAfterLrclib(status.notFound, "无歌词数据", expectedTitle, expectedArtist);
+
+        } catch (e) {
+            _fallbackAfterLrclib(status.error, "解析失败: " + e, expectedTitle, expectedArtist);
+        }
+    }
+
+    function _handleLrclibError(errMsg, expectedTitle, expectedArtist) {
+        console.warn("[Lyrics] lrclib: 请求失败 — " + errMsg);
+        _fallbackAfterLrclib(status.error, errMsg, expectedTitle, expectedArtist);
+    }
+
+    function _fallbackAfterLrclib(statusVal, reason, title, artist) {
+        lrclibStatus = statusVal;
+        console.info("[Lyrics] lrclib: " + reason + " - \"" + title + "\"");
+
+        if (neteaseEnabled) {
+            _fetchFromNetease(title, artist);
+        } else {
+            _setFinalNotFound(statusVal);
+        }
+    }
+
+    // ============================================
+    // 歌词源：网易云音乐
+    // ============================================
 
     function _fetchFromNetease(expectedTitle, expectedArtist) {
-        if (!neteaseEnabled) {
-            neteaseStatus = status.skippedConfig;
-            console.info("[Lyrics] 网易云: 已禁用，跳过");
+        if (!_checkSourceEnabled("netease", neteaseEnabled, false)) {
             _setFinalNotFound(status.notFound);
             return;
         }
-
-        if (lyricStatus === lyricState.synced) {
-            neteaseStatus = status.skippedFound;
-            console.info("[Lyrics] 网易云: 已跳过 (已找到同步歌词)");
-            return;
-        }
+        if (_checkAlreadySynced("netease")) return;
 
         neteaseStatus = status.searching;
-        console.info("[Lyrics] 网易云: 步骤1 - 搜索歌曲ID - \"" + expectedTitle + "\" - " + expectedArtist);
+        console.info("[Lyrics] 网易云: 搜索 \"" + expectedTitle + "\"");
 
-        // Step 1: Search song ID using Netease search API
-        // 只使用歌曲名字搜索，不包含艺术家
-        var searchUrl = "http://music.163.com/api/search/get/web?csrf_token=&hlpretag=&hlposttag=&s=" + encodeURIComponent(expectedTitle) + "&type=1&offset=0&total=true&limit=2";
+        var searchUrl = "http://music.163.com/api/search/get/web?csrf_token=&hlpretag=&hlposttag=&s="
+                      + encodeURIComponent(expectedTitle) + "&type=1&offset=0&total=true&limit=2";
 
-        // 使用自定义请求头，避免 HTTP 被阻止
         var customHeaders = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.0",
             "Accept": "application/json, text/plain, */*",
             "Referer": "http://music.163.com/"
         };
-        
-        root._cancelActiveFetch = _xhrRequest(searchUrl, "GET", 15000, function (responseText, httpStatus) {
-            // Guard: track may have changed
-            if (expectedTitle !== root._lastFetchedTrack || expectedArtist !== root._lastFetchedArtist)
-                return;
 
-            var rawData = (responseText || "").trim();
-            console.log("[Lyrics] Netease: search response length = " + rawData.length);
-            if (rawData.length === 0) {
-                root._setFinalNotFound(status.error);
-                console.warn("[Lyrics] Netease: empty search response (HTTP " + httpStatus + ")");
+        root._cancelActiveFetch = _xhrRequest(searchUrl, "GET", 15000,
+            function (responseText, httpStatus) {
+                _handleNeteaseSearchResponse(responseText, expectedTitle, expectedArtist);
+            },
+            function (errMsg) {
+                _handleNeteaseError("搜索失败: " + errMsg, expectedTitle);
+            },
+            customHeaders
+        );
+    }
+
+    function _handleNeteaseSearchResponse(responseText, expectedTitle, expectedArtist) {
+        if (!_isCurrentTrack(expectedTitle, expectedArtist)) return;
+
+        var rawData = (responseText || "").trim();
+        if (rawData.length === 0) {
+            _handleNeteaseError("空搜索响应", expectedTitle);
+            return;
+        }
+
+        try {
+            var result = JSON.parse(rawData);
+            var songs = result?.result?.songs;
+
+            if (!songs || songs.length === 0) {
+                _handleNeteaseError("未找到歌曲", expectedTitle);
                 return;
             }
 
-            try {
-                var result = JSON.parse(rawData);
-                var songs = result?.result?.songs;
-                
-                if (!songs || songs.length === 0) {
-                    root.neteaseStatus = status.notFound;
-                    root._setFinalNotFound(status.notFound);
-                    console.info("[Lyrics] ✗ 网易云: 未找到歌曲 - \"" + expectedTitle + "\"");
-                    return;
-                }
+            var matchedSong = _findBestMatch(songs, expectedTitle);
+            var songId = matchedSong.id;
+            var songName = matchedSong.name;
+            var artistName = matchedSong.artists?.[0]?.name || "未知";
 
-                // Find best match (prefer exact title match, fallback to first)
-                var matchedSong = songs[0];
-                for (var i = 0; i < songs.length; i++) {
-                    if (songs[i].name.toLowerCase() === expectedTitle.toLowerCase()) {
-                        matchedSong = songs[i];
-                        break;
-                    }
-                }
+            console.info("[Lyrics] 网易云: 匹配 \"" + songName + "\" - " + artistName);
 
-                var songId = matchedSong.id;
-                var songName = matchedSong.name;
-                var artistName = matchedSong.artists?.[0]?.name || "未知";
+            _fetchNeteaseLyrics(songId, expectedTitle, expectedArtist, songName, artistName);
 
-                console.info("[Lyrics] 网易云: 匹配到歌曲 \"" + songName + "\" - " + artistName + " (ID: " + songId + ")");
-                
-                // Step 2: Fetch lyrics using paugram API with the song ID
-                root._fetchNeteaseLyrics(songId, expectedTitle, expectedArtist, songName, artistName);
-
-            } catch (e) {
-                root.neteaseStatus = status.error;
-                root._setFinalNotFound(status.error);
-                console.warn("[Lyrics] 网易云: 解析搜索响应失败 — " + e);
-                console.warn("[Lyrics] 网易云: 原始数据: " + rawData.substring(0, 200));
-            }
-        }, function (errMsg) {
-            root.neteaseStatus = status.error;
-            root._setFinalNotFound(status.error);
-            console.warn("[Lyrics] 网易云: 搜索请求失败 — " + errMsg);
-        }, customHeaders);
+        } catch (e) {
+            _handleNeteaseError("解析失败: " + e, expectedTitle);
+        }
     }
 
     function _fetchNeteaseLyrics(songId, expectedTitle, expectedArtist, matchedName, matchedArtist) {
-        console.info("[Lyrics] 网易云: 步骤2 - 获取歌词 ID: " + songId);
+        if (!_isCurrentTrack(expectedTitle, expectedArtist)) return;
 
         var lyricUrl = "https://api.paugram.com/netease/?id=" + encodeURIComponent(songId);
 
-        root._cancelActiveFetch = _xhrGet(lyricUrl, 15000, function (responseText, httpStatus) {
-            // Guard: track may have changed
-            if (expectedTitle !== root._lastFetchedTrack || expectedArtist !== root._lastFetchedArtist)
-                return;
-
-            var rawData = (responseText || "").trim();
-            console.log("[Lyrics] 网易云: 歌词响应长度 = " + rawData.length);
-            if (rawData.length === 0) {
-                root.neteaseStatus = status.error;
-                root._setFinalNotFound(status.error);
-                console.warn("[Lyrics] 网易云: 歌词响应为空 (HTTP " + httpStatus + ")");
-                return;
+        root._cancelActiveFetch = _xhrGet(lyricUrl, 15000,
+            function (responseText, httpStatus) {
+                _handleNeteaseLyricResponse(responseText, expectedTitle, expectedArtist, matchedName, matchedArtist);
+            },
+            function (errMsg) {
+                _handleNeteaseError("歌词请求失败: " + errMsg, expectedTitle);
             }
-
-            try {
-                var result = JSON.parse(rawData);
-                
-                if (!result.title) {
-                    root.neteaseStatus = status.notFound;
-                    root._setFinalNotFound(status.notFound);
-                    console.info("[Lyrics] ✗ 网易云: 未返回歌曲数据 ID: " + songId);
-                    return;
-                }
-
-                var lyricText = result.lyric || "";
-                if (lyricText.trim() === "") {
-                    root.neteaseStatus = status.notFound;
-                    root._setFinalNotFound(status.notFound);
-                    console.info("[Lyrics] ✗ 网易云: 该歌曲无歌词 - \"" + matchedName + "\"");
-                    return;
-                }
-
-                var lines = root.parseLrc(lyricText);
-                if (lines.length === 0) {
-                    root.neteaseStatus = status.notFound;
-                    root._setFinalNotFound(status.notFound);
-                    console.info("[Lyrics] ✗ 网易云: LRC解析失败 - \"" + matchedName + "\"");
-                    return;
-                }
-
-                root.lyricsLines = lines;
-                root.neteaseStatus = status.found;
-                root.lyricStatus = lyricState.synced;
-                root.lyricSource = lyricSrc.netease;
-                root._lastSyncedTrack = expectedTitle;
-                root._lastSyncedArtist = expectedArtist;
-                console.info("[Lyrics] ✓ 网易云: 已找到同步歌词 (" + lines.length + " 行) - \"" + expectedTitle + "\" (匹配: \"" + matchedName + "\" - " + matchedArtist + ")");
-                root._cancelActiveFetch = null;
-                if (root.cachingEnabled)
-                    root.writeToCache(expectedTitle, expectedArtist, lines, lyricSrc.netease);
-            } catch (e) {
-                root.neteaseStatus = status.error;
-                root._setFinalNotFound(status.error);
-                console.warn("[Lyrics] 网易云: 解析歌词响应失败 — " + e);
-                console.warn("[Lyrics] 网易云: 原始数据: " + rawData.substring(0, 200));
-            }
-        }, function (errMsg) {
-            root.neteaseStatus = status.error;
-            root._setFinalNotFound(status.error);
-            console.warn("[Lyrics] 网易云: 歌词请求失败 — " + errMsg);
-        });
+        );
     }
 
-    // -------------------------------------------------------------------------
-    // Custom API fetch
-    // -------------------------------------------------------------------------
+    function _handleNeteaseLyricResponse(responseText, expectedTitle, expectedArtist, matchedName, matchedArtist) {
+        if (!_isCurrentTrack(expectedTitle, expectedArtist)) return;
+
+        var rawData = (responseText || "").trim();
+        if (rawData.length === 0) {
+            _handleNeteaseError("空歌词响应", expectedTitle);
+            return;
+        }
+
+        try {
+            var result = JSON.parse(rawData);
+
+            if (!result.title) {
+                _handleNeteaseError("无歌曲数据", expectedTitle);
+                return;
+            }
+
+            var lyricText = result.lyric || "";
+            if (lyricText.trim() === "") {
+                _handleNeteaseError("该歌曲无歌词", expectedTitle);
+                return;
+            }
+
+            var lines = parseLrc(lyricText);
+            if (lines.length === 0) {
+                _handleNeteaseError("LRC解析失败", expectedTitle);
+                return;
+            }
+
+            _applyLyricsLines(lines, lyricSrc.netease, expectedTitle, expectedArtist);
+            console.info("[Lyrics] 网易云: 匹配 \"" + matchedName + "\" - " + matchedArtist);
+
+        } catch (e) {
+            _handleNeteaseError("解析失败: " + e, expectedTitle);
+        }
+    }
+
+    function _handleNeteaseError(reason, title) {
+        neteaseStatus = status.error;
+        console.warn("[Lyrics] 网易云: " + reason + " - \"" + title + "\"");
+        _setFinalNotFound(status.error);
+    }
+
+    // ============================================
+    // 歌词源：自定义 API
+    // ============================================
 
     function _fetchFromCustomApi(expectedTitle, expectedArtist) {
-        console.info("[Lyrics] 自定义API: 正在获取 \"" + expectedTitle + "\" - " + expectedArtist);
+        console.info("[Lyrics] 自定义API: 获取 \"" + expectedTitle + "\"");
 
-        // 替换 URL 中的变量
         var url = customApiUrl
             .replace(/{title}/g, encodeURIComponent(expectedTitle))
             .replace(/{artist}/g, encodeURIComponent(expectedArtist))
             .replace(/{album}/g, encodeURIComponent(currentAlbum || ""));
 
-        console.info("[Lyrics] 自定义API: 请求 URL: " + url);
-        console.info("[Lyrics] 自定义API: 请求方法: " + customApiMethod);
+        var postData = customApiMethod === "POST" ? {
+            title: expectedTitle,
+            artist: expectedArtist,
+            album: currentAlbum || ""
+        } : null;
 
-        // 准备 POST 数据（如果是 POST 请求）
-        var postData = null;
-        if (customApiMethod === "POST") {
-            postData = {
-                title: expectedTitle,
-                artist: expectedArtist,
-                album: currentAlbum || ""
-            };
+        root._cancelActiveFetch = _xhrRequest(url, customApiMethod, 20000,
+            function (responseText, httpStatus) {
+                _handleCustomApiResponse(responseText, expectedTitle, expectedArtist);
+            },
+            function (errMsg) {
+                console.warn("[Lyrics] 自定义API: 失败 - " + errMsg);
+                _fetchFromCacheOrBuiltin(expectedTitle, expectedArtist);
+            },
+            null,
+            postData
+        );
+    }
+
+    function _handleCustomApiResponse(responseText, expectedTitle, expectedArtist) {
+        var rawData = (responseText || "").trim();
+        if (rawData.length === 0) {
+            _fallbackToBuiltin("空响应", expectedTitle, expectedArtist);
+            return;
         }
 
-        root._cancelActiveFetch = _xhrRequest(url, customApiMethod, 20000, function (responseText, httpStatus) {
-            var rawData = (responseText || "").trim();
-            console.log("[Lyrics] 自定义API: response length = " + rawData.length);
+        try {
+            var result = JSON.parse(rawData);
+            var lyricText = result.lyrics || result.lyric || result.lrc || result.content || result.data;
 
-            if (rawData.length === 0) {
-                console.warn("[Lyrics] 自定义API: 空响应，回退到内置源");
-                _fetchFromCacheOrBuiltin(expectedTitle, expectedArtist);
+            if (!lyricText || lyricText.trim() === "") {
+                _fallbackToBuiltin("响应中无歌词", expectedTitle, expectedArtist);
                 return;
             }
 
-            try {
-                var result = JSON.parse(rawData);
-
-                // 支持多种响应格式
-                var lyricText = result.lyrics || result.lyric || result.lrc || result.content || result.data;
-
-                if (!lyricText || lyricText.trim() === "") {
-                    console.warn("[Lyrics] 自定义API: 响应中无歌词，回退到内置源");
-                    _fetchFromCacheOrBuiltin(expectedTitle, expectedArtist);
-                    return;
-                }
-
-                var lines = root.parseLrc(lyricText);
-                if (lines.length === 0) {
-                    // 尝试将纯文本转换为歌词格式
-                    var plainLines = lyricText.split("\n").map(function(line) {
-                        return { time: 0, text: line.trim() };
-                    }).filter(function(l) { return l.text !== ""; });
-
-                    if (plainLines.length > 0) {
-                        lines = plainLines;
-                    }
-                }
-
-                if (lines.length === 0) {
-                    console.warn("[Lyrics] 自定义API: 解析失败，回退到内置源");
-                    _fetchFromCacheOrBuiltin(expectedTitle, expectedArtist);
-                    return;
-                }
-
-                root.lyricsLines = lines;
-                root.lyricStatus = lyricState.synced;
-                root.lyricSource = lyricSrc.custom;
-                console.info("[Lyrics] ✓ 自定义API: 已找到歌词 (" + lines.length + " 行) - \"" + expectedTitle + "\"");
-                root._cancelActiveFetch = null;
-
-                if (root.cachingEnabled)
-                    root.writeToCache(expectedTitle, expectedArtist, lines, lyricSrc.custom);
-
-            } catch (e) {
-                console.warn("[Lyrics] 自定义API: 解析失败 — " + e);
-                console.warn("[Lyrics] 自定义API: 原始数据: " + rawData.substring(0, 200));
-                _fetchFromCacheOrBuiltin(expectedTitle, expectedArtist);
+            var lines = parseLrc(lyricText);
+            if (lines.length === 0) {
+                lines = _plainTextToLines(lyricText);
             }
-        }, function (errMsg) {
-            console.warn("[Lyrics] 自定义API: 请求失败 — " + errMsg + "，回退到内置源");
-            _fetchFromCacheOrBuiltin(expectedTitle, expectedArtist);
-        });
+
+            if (lines.length === 0) {
+                _fallbackToBuiltin("解析失败", expectedTitle, expectedArtist);
+                return;
+            }
+
+            _applyLyricsLines(lines, lyricSrc.custom, expectedTitle, expectedArtist);
+
+        } catch (e) {
+            _fallbackToBuiltin("解析失败: " + e, expectedTitle, expectedArtist);
+        }
+    }
+
+    function _fallbackToBuiltin(reason, title, artist) {
+        console.warn("[Lyrics] 自定义API: " + reason + "，回退到内置源");
+        _fetchFromCacheOrBuiltin(title, artist);
     }
 
     function _fetchFromCacheOrBuiltin(title, artist) {
-        // 回退到缓存或内置源
         if (cachingEnabled) {
             readFromCache(title, artist, function (cached) {
-                if (cached && cached.lines && cached.lines.length > 0) {
-                    root.lyricsLines = cached.lines;
-                    root.lyricStatus = lyricState.synced;
-                    root.lyricSource = cached.source > 0 ? cached.source : lyricSrc.cache;
-                    root.cacheStatus = status.cacheHit;
-                    root.lrclibStatus = status.skippedFound;
-                    root.neteaseStatus = status.skippedFound;
-                    console.info("[Lyrics] ✓ 缓存: 已加载 \"" + title + "\" 的歌词 (" + cached.lines.length + " 行)");
+                if (cached?.lines?.length > 0) {
+                    _applyCachedLyrics(cached, title, artist);
                     return;
                 }
                 root.cacheStatus = status.cacheMiss;
@@ -802,6 +785,78 @@ PluginComponent {
         } else {
             cacheStatus = status.cacheDisabled;
             _fetchFromLrclib(title, artist);
+        }
+    }
+
+    // ============================================
+    // 歌词处理辅助函数
+    // ============================================
+
+    function _checkSourceEnabled(name, enabled, hasFallback) {
+        if (!enabled) {
+            if (name === "lrclib") lrclibStatus = status.skippedConfig;
+            if (name === "netease") neteaseStatus = status.skippedConfig;
+            console.info("[Lyrics] " + name + ": 已禁用，跳过");
+            return false;
+        }
+        return true;
+    }
+
+    function _checkAlreadySynced(name) {
+        if (lyricStatus === lyricState.synced) {
+            if (name === "lrclib") lrclibStatus = status.skippedFound;
+            if (name === "netease") neteaseStatus = status.skippedFound;
+            console.info("[Lyrics] " + name + ": 已跳过 (已找到歌词)");
+            return true;
+        }
+        return false;
+    }
+
+    function _isCurrentTrack(title, artist) {
+        return title === root._lastFetchedTrack && artist === root._lastFetchedArtist;
+    }
+
+    function _findBestMatch(songs, expectedTitle) {
+        var lowerTitle = expectedTitle.toLowerCase();
+        for (var i = 0; i < songs.length; i++) {
+            if (songs[i].name.toLowerCase() === lowerTitle) {
+                return songs[i];
+            }
+        }
+        return songs[0];
+    }
+
+    function _plainTextToLines(plainText) {
+        return plainText
+            .split("\n")
+            .map(function(line) { return { time: 0, text: line.trim() }; })
+            .filter(function(l) { return l.text !== ""; });
+    }
+
+    function _applyLyricsFromSource(lrcText, source, title, artist) {
+        var lines = parseLrc(lrcText);
+        _applyLyricsLines(lines, source, title, artist);
+    }
+
+    function _applyLyricsLines(lines, source, title, artist) {
+        root.lyricsLines = lines;
+        root.lyricStatus = lyricState.synced;
+        root.lyricSource = source;
+        root._lastSyncedTrack = title;
+        root._lastSyncedArtist = artist;
+        root._cancelActiveFetch = null;
+
+        if (source === lyricSrc.lrclib) lrclibStatus = status.found;
+        if (source === lyricSrc.netease) neteaseStatus = status.found;
+
+        var sourceName = source === lyricSrc.lrclib ? "lrclib" :
+                        source === lyricSrc.netease ? "网易云" :
+                        source === lyricSrc.custom ? "自定义API" : "未知";
+
+        console.info("[Lyrics] ✓ " + sourceName + ": 已找到歌词 (" + lines.length + " 行) - \"" + title + "\"");
+
+        if (cachingEnabled) {
+            writeToCache(title, artist, lines, source);
         }
     }
 

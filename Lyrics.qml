@@ -1116,7 +1116,7 @@ PluginComponent {
             Row {
                 anchors.verticalCenter: parent.verticalCenter
                 spacing: 8
-                width: Math.min(implicitWidth, 500)
+                width: Math.min(implicitWidth, 350)
 
                 // 歌词 - 加粗显示
                 StyledText {

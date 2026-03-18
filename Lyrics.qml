@@ -1062,8 +1062,7 @@ PluginComponent {
             width: 56
             height: 24
             radius: 12
-            color: root._apiStatusColor(root.neteaseStatus)
-            opacity: 0.15
+            color: Theme.withAlpha(root._apiStatusColor(root.neteaseStatus), 0.25)
             border.color: root._apiStatusColor(root.neteaseStatus)
             border.width: 1
 
@@ -1074,15 +1073,15 @@ PluginComponent {
                 DankIcon {
                     name: "cloud"
                     size: 14
-                    color: root._apiStatusColor(root.neteaseStatus)
+                    color: "#000000"
                     anchors.verticalCenter: parent.verticalCenter
                 }
 
                 StyledText {
                     text: "网易"
                     font.pixelSize: 11
-                    color: "#212121"
-                    font.weight: Font.Medium
+                    color: "#000000"
+                    font.weight: Font.Bold
                     anchors.verticalCenter: parent.verticalCenter
                 }
             }
@@ -1103,8 +1102,7 @@ PluginComponent {
             width: 56
             height: 24
             radius: 12
-            color: root._apiStatusColor(root.lrclibStatus)
-            opacity: 0.15
+            color: Theme.withAlpha(root._apiStatusColor(root.lrclibStatus), 0.25)
             border.color: root._apiStatusColor(root.lrclibStatus)
             border.width: 1
 
@@ -1115,15 +1113,15 @@ PluginComponent {
                 DankIcon {
                     name: "library_music"
                     size: 14
-                    color: root._apiStatusColor(root.lrclibStatus)
+                    color: "#000000"
                     anchors.verticalCenter: parent.verticalCenter
                 }
 
                 StyledText {
                     text: "LRC"
                     font.pixelSize: 11
-                    color: "#212121"
-                    font.weight: Font.Medium
+                    color: "#000000"
+                    font.weight: Font.Bold
                     anchors.verticalCenter: parent.verticalCenter
                 }
             }
@@ -1144,8 +1142,7 @@ PluginComponent {
             width: 56
             height: 24
             radius: 12
-            color: root._apiStatusColor(root.cacheStatus)
-            opacity: 0.15
+            color: Theme.withAlpha(root._apiStatusColor(root.cacheStatus), 0.25)
             border.color: root._apiStatusColor(root.cacheStatus)
             border.width: 1
 
@@ -1156,15 +1153,15 @@ PluginComponent {
                 DankIcon {
                     name: "storage"
                     size: 14
-                    color: root._apiStatusColor(root.cacheStatus)
+                    color: "#000000"
                     anchors.verticalCenter: parent.verticalCenter
                 }
 
                 StyledText {
                     text: "缓存"
                     font.pixelSize: 11
-                    color: "#212121"
-                    font.weight: Font.Medium
+                    color: "#000000"
+                    font.weight: Font.Bold
                     anchors.verticalCenter: parent.verticalCenter
                 }
             }

@@ -15,6 +15,7 @@ import qs.Modules.Plugins
 
 PluginComponent {
     id: root
+    layerNamespacePlugin: "lyrics"
 
     // ============================================
     // 配置属性
@@ -1654,16 +1655,16 @@ PluginComponent {
     function _apiStatusColor(statusVal) {
         switch (statusVal) {
             case status.error:
-                return "#FF5252";      // 鲜艳红色
+                return Theme.error;      // 错误状态使用主题错误色
             case status.searching:
-                return "#FFD740";      // 鲜艳琥珀色
+                return Theme.warning;    // 搜索中状态使用主题警告色
             case status.found:
             case status.cacheHit:
-                return "#69F0AE";      // 鲜艳绿色
+                return Theme.primary;    // 找到和缓存命中使用主题主色
             case status.none:
             case status.skippedConfig:
             default:
-                return "#9E9E9E";      // 中灰色
+                return Theme.surfaceVariantText;  // 默认状态使用表面变体文本色
         }
     }
 

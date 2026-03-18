@@ -6,7 +6,7 @@ import qs.Widgets
 
 PluginSettings {
     id: root
-    pluginId: "musicLyrics"
+    pluginId: "lyrics"
 
     StyledText {
         width: parent.width

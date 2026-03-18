@@ -4,7 +4,11 @@
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![DMS](https://img.shields.io/badge/DankMaterialShell-1.4+-purple)
 
-实时歌词显示插件，支持多源获取与智能匹配。
+# 一个正在开发中的二改dms　歌词插件
+
+# 原作者的项目仓库　https://github.com/gasiyu/dms-plugin-musiclyrics
+
+
 
 ## 界面
 

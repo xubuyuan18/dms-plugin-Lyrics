@@ -1118,7 +1118,7 @@ PluginComponent {
                 spacing: 8
                 width: Math.min(implicitWidth, 350)
 
-                // 歌词 - 加粗显示
+                // 歌词 - 加粗显示，统一使用主题字体
                 StyledText {
                     text: {
                         if (root.lyricsLines.length > 0 && root.currentLineIndex >= 0 && root.lyricsLines[root.currentLineIndex].text) {
@@ -1127,6 +1127,7 @@ PluginComponent {
                         return "";
                     }
                     font.pixelSize: pluginData.lyricsFontSize || Theme.fontSizeMedium
+                    font.family: Theme.fontFamily
                     color: Theme.surfaceText
                     font.weight: Font.Bold
                     maximumLineCount: 1
@@ -1134,19 +1135,26 @@ PluginComponent {
                     visible: text !== ""
                 }
 
-                // 歌曲名 - 仅在没有歌词或纯音乐时显示
+                // 歌曲名/视频标题 - 仅在没有歌词或纯音乐时显示，带超长截断
                 StyledText {
                     text: {
                         // 没有歌词或纯音乐时显示歌曲名
                         if (root.lyricsLines.length === 0 || 
                             (root.currentLineIndex >= 0 && root.lyricsLines[root.currentLineIndex] && 
                              _isInstrumentalMarker(root.lyricsLines[root.currentLineIndex].text))) {
-                            return root.currentTitle || I18n.tr("暂无歌词");
+                            // 截断超长标题（最多50个字符）
+                            var title = root.currentTitle || I18n.tr("暂无歌词");
+                            if (title.length > 50) {
+                                title = title.substring(0, 47) + "...";
+                            }
+                            return title;
                         }
                         return "";
                     }
                     font.pixelSize: (pluginData.lyricsFontSize || Theme.fontSizeMedium) + 2
+                    font.family: Theme.fontFamily
                     color: Theme.surfaceVariantText
+                    font.weight: Font.Bold
                     maximumLineCount: 1
                     elide: Text.ElideRight
                     visible: text !== ""

@@ -607,7 +607,7 @@ PluginComponent {
                 _handleNeteaseSearchResponse(responseText, expectedTitle, expectedArtist);
             },
             function (errMsg) {
-                _handleNeteaseError("搜索失败: " + errMsg, expectedTitle);
+                _handleNeteaseError("搜索失败: " + errMsg, expectedTitle, expectedArtist);
             },
             customHeaders
         );
@@ -627,7 +627,7 @@ PluginComponent {
             var songs = result?.result?.songs;
 
             if (!songs || songs.length === 0) {
-                _handleNeteaseError("未找到歌曲", expectedTitle);
+                _handleNeteaseError("未找到歌曲", expectedTitle, expectedArtist);
                 return;
             }
 
@@ -655,7 +655,7 @@ PluginComponent {
                 _handleNeteaseLyricResponse(responseText, expectedTitle, expectedArtist, matchedName, matchedArtist);
             },
             function (errMsg) {
-                _handleNeteaseError("歌词请求失败: " + errMsg, expectedTitle);
+                _handleNeteaseError("歌词请求失败: " + errMsg, expectedTitle, expectedArtist);
             }
         );
     }
@@ -665,7 +665,7 @@ PluginComponent {
 
         var rawData = (responseText || "").trim();
         if (rawData.length === 0) {
-            _handleNeteaseError("空歌词响应", expectedTitle);
+            _handleNeteaseError("空搜索响应", expectedTitle, expectedArtist);
             return;
         }
 
@@ -673,19 +673,19 @@ PluginComponent {
             var result = JSON.parse(rawData);
 
             if (!result.title) {
-                _handleNeteaseError("无歌曲数据", expectedTitle);
+                _handleNeteaseError("无歌曲数据", expectedTitle, expectedArtist);
                 return;
             }
 
             var lyricText = result.lyric || "";
             if (lyricText.trim() === "") {
-                _handleNeteaseError("该歌曲无歌词", expectedTitle);
+                _handleNeteaseError("该歌曲无歌词", expectedTitle, expectedArtist);
                 return;
             }
 
             var lines = parseLrc(lyricText);
             if (lines.length === 0) {
-                _handleNeteaseError("LRC解析失败", expectedTitle);
+                _handleNeteaseError("LRC解析失败", expectedTitle, expectedArtist);
                 return;
             }
 
@@ -693,14 +693,21 @@ PluginComponent {
             console.info("[Lyrics] 网易云: 匹配 \"" + matchedName + "\" - " + matchedArtist);
 
         } catch (e) {
-            _handleNeteaseError("解析失败: " + e, expectedTitle);
+            _handleNeteaseError("解析失败: " + e, expectedTitle, expectedArtist);
         }
     }
 
-    function _handleNeteaseError(reason, title) {
+    function _handleNeteaseError(reason, title, artist) {
         neteaseStatus = status.error;
         console.warn("[Lyrics] 网易云: " + reason + " - \"" + title + "\"");
-        _setFinalNotFound(status.error);
+
+        // 网易云失败时，回退到 lrclib
+        if (lrclibEnabled) {
+            console.info("[Lyrics] 网易云失败，尝试 lrclib...");
+            _fetchFromLrclib(title, artist);
+        } else {
+            _setFinalNotFound(status.error);
+        }
     }
 
     // ============================================
@@ -737,7 +744,7 @@ PluginComponent {
     function _handleCustomApiResponse(responseText, expectedTitle, expectedArtist) {
         var rawData = (responseText || "").trim();
         if (rawData.length === 0) {
-            _fallbackToBuiltin("空响应", expectedTitle, expectedArtist);
+            _handleNeteaseError("空歌词响应", expectedTitle, expectedArtist);
             return;
         }
 
@@ -763,7 +770,7 @@ PluginComponent {
             _applyLyricsLines(lines, lyricSrc.custom, expectedTitle, expectedArtist);
 
         } catch (e) {
-            _fallbackToBuiltin("解析失败: " + e, expectedTitle, expectedArtist);
+            _handleNeteaseError("解析失败: " + e, expectedTitle, expectedArtist);
         }
     }
 

@@ -1277,33 +1277,88 @@ PluginComponent {
                         clip: true
 
                         // ============================================
-                        // 专辑封面显示区域
+                        // 黑胶唱片专辑封面
                         // ============================================
                         // 设计说明：
-                        // - 尺寸：200x200，较大的视觉冲击力
-                        // - 位置：卡片右上角，部分超出边界营造视觉层次感
-                        // - z-index: 10，确保封面显示在歌曲信息上方
-                        // - 旋转动画：播放时旋转，暂停时停止
+                        // - 尺寸：200x200，保持原有大小
+                        // - 样式：深灰色带纹理的黑胶唱片效果
+                        // - 中心：80x80的专辑封面
+                        // - 位置：卡片右上角，部分超出边界
+                        // - 旋转动画：20秒/圈，更慢更优雅
                         // ============================================
-                        DankAlbumArt {
-                            id: _coverArtContainer
+                        Item {
+                            id: _vinylRecordContainer
                             width: 200
                             height: 200
-                            visible: root.activePlayer && (root.activePlayer.trackArtUrl ?? "") !== ""
+                            visible: root.activePlayer
                             anchors.top: parent.top
                             anchors.right: parent.right
-                            anchors.topMargin: -40      // 向上偏移，部分超出卡片边界
-                            anchors.rightMargin: -35    // 向右偏移，部分超出卡片边界
-                            z: 10                       // 高层级，覆盖在文字上方
-                            activePlayer: root.activePlayer
-                            showAnimation: true         // 启用加载动画
+                            anchors.topMargin: -40
+                            anchors.rightMargin: -35
+                            z: 10
 
-                            // 旋转动画
+                            // 黑胶唱片主体（深灰色圆形）
+                            Rectangle {
+                                id: vinylRecord
+                                anchors.fill: parent
+                                radius: 100
+                                color: "#252525"  // 深灰色底色
+
+                                // 唱片纹理（同心圆纹路）
+                                Canvas {
+                                    anchors.fill: parent
+                                    onPaint: {
+                                        var ctx = getContext("2d");
+                                        var centerX = width / 2;
+                                        var centerY = height / 2;
+
+                                        // 绘制同心圆纹理（6条）
+                                        for (var i = 2; i < 8; i++) {
+                                            ctx.beginPath();
+                                            ctx.arc(centerX, centerY, 45 + i * 10, 0, 2 * Math.PI);
+                                            ctx.strokeStyle = "#353535";  // 稍浅的灰色纹理
+                                            ctx.lineWidth = 1;
+                                            ctx.stroke();
+                                        }
+                                    }
+                                }
+
+                                // 中心专辑封面容器
+                                Rectangle {
+                                    width: 80
+                                    height: 80
+                                    radius: 40
+                                    anchors.centerIn: parent
+                                    color: "#1a1a1a"  // 中心深色背景
+                                    clip: true
+
+                                    // 专辑封面
+                                    DankAlbumArt {
+                                        anchors.fill: parent
+                                        activePlayer: root.activePlayer
+                                        showAnimation: true
+                                    }
+                                }
+
+                                // 高光效果（增加立体感）
+                                Rectangle {
+                                    anchors.fill: parent
+                                    radius: 100
+                                    gradient: Gradient {
+                                        GradientStop { position: 0.0; color: "#20ffffff" }
+                                        GradientStop { position: 0.3; color: "#00ffffff" }
+                                        GradientStop { position: 0.7; color: "#00ffffff" }
+                                        GradientStop { position: 1.0; color: "#15000000" }
+                                    }
+                                }
+                            }
+
+                            // 旋转动画（20秒/圈，更慢）
                             RotationAnimation on rotation {
                                 id: coverRotation
                                 from: 0
                                 to: 360
-                                duration: 10000          // 10秒转一圈
+                                duration: 20000          // 20秒转一圈（更慢）
                                 loops: Animation.Infinite
                                 running: root.activePlayer && root.activePlayer.playbackState === MprisPlaybackState.Playing
                             }
@@ -1415,7 +1470,7 @@ PluginComponent {
                                 // Spacer to ensure vertical separation from cover art
                                 Item {
                                     width: 1
-                                    height: _coverArtContainer.visible ? 24 : 0
+                                    height: _vinylRecordContainer.visible ? 24 : 0
                                 }
 
                                 // Progress bar with timestamps

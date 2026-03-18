@@ -1135,19 +1135,15 @@ PluginComponent {
                     visible: text !== ""
                 }
 
-                // 歌曲名/视频标题 - 仅在没有歌词或纯音乐时显示，带超长截断
+                // 歌曲名/视频标题 - 仅在没有歌词或纯音乐时显示
+                // 使用 QML 的 elide 机制自动截断超长文本
                 StyledText {
                     text: {
                         // 没有歌词或纯音乐时显示歌曲名
                         if (root.lyricsLines.length === 0 || 
                             (root.currentLineIndex >= 0 && root.lyricsLines[root.currentLineIndex] && 
                              _isInstrumentalMarker(root.lyricsLines[root.currentLineIndex].text))) {
-                            // 截断超长标题（最多50个字符）
-                            var title = root.currentTitle || I18n.tr("暂无歌词");
-                            if (title.length > 50) {
-                                title = title.substring(0, 47) + "...";
-                            }
-                            return title;
+                            return root.currentTitle || I18n.tr("暂无歌词");
                         }
                         return "";
                     }
@@ -1156,7 +1152,7 @@ PluginComponent {
                     color: Theme.surfaceVariantText
                     font.weight: Font.Bold
                     maximumLineCount: 1
-                    elide: Text.ElideRight
+                    elide: Text.ElideRight  // QML 自动截断超长文本
                     visible: text !== ""
                 }
             }

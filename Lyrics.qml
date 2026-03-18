@@ -1370,7 +1370,9 @@ PluginComponent {
                                         height: 32
                                         anchors.horizontalCenter: parent.horizontalCenter
 
+                                        // 使用 _forceUpdate 触发重新计算进度
                                         property real progress: {
+                                            void root._forceUpdate; // 依赖轮询触发更新
                                             if (!root.activePlayer || !root.activePlayer.length) return 0;
                                             return Math.min(1, (root.activePlayer.position || 0) / root.activePlayer.length);
                                         }
@@ -1424,10 +1426,11 @@ PluginComponent {
                                         }
                                     }
 
-                                    // Poll MPRIS position to keep time text updated
+                                    // Poll MPRIS position to keep progress bar and time text updated
                                     Timer {
-                                        interval: 50
-                                        running: root.activePlayer !== null
+                                        id: progressPollTimer
+                                        interval: 100
+                                        running: root.activePlayer !== null && popout.visible
                                         repeat: true
                                         onTriggered: {
                                             root._forceUpdate = !root._forceUpdate;

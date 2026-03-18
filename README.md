@@ -15,15 +15,17 @@
 - 🎛️ **播放控制** - 上一首/播放/暂停/下一首
 
 ## 截图
+<img width="656" height="498" alt="Screenshot from 2026-03-18 00-06-22" src="https://github.com/user-attachments/assets/327ea1a2-5aab-469a-983f-b59f4f13118e" />
 
-![Plugin Screenshot](./screenshots.png)
+
+
 
 ## 安装
 
 ```bash
 cd ~/.config/DankMaterialShell/plugins
-git clone https://github.com/xubuyuan18/dms-plugin-Lyrics.git musicLyrics
-dms ipc call plugins reload musicLyrics
+git clone https://github.com/xubuyuan18/dms-plugin-Lyrics.git Lyrics
+dms ipc call plugins reload Lyrics
 ```
 
 ## 设置

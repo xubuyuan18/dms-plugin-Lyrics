@@ -1073,14 +1073,14 @@ PluginComponent {
                 DankIcon {
                     name: "cloud"
                     size: 14
-                    color: "#000000"
+                    color: root._apiStatusColor(root.neteaseStatus)
                     anchors.verticalCenter: parent.verticalCenter
                 }
 
                 StyledText {
                     text: "网易"
                     font.pixelSize: 11
-                    color: "#000000"
+                    color: root._apiStatusColor(root.neteaseStatus)
                     font.weight: Font.Bold
                     anchors.verticalCenter: parent.verticalCenter
                 }
@@ -1113,14 +1113,14 @@ PluginComponent {
                 DankIcon {
                     name: "library_music"
                     size: 14
-                    color: "#000000"
+                    color: root._apiStatusColor(root.lrclibStatus)
                     anchors.verticalCenter: parent.verticalCenter
                 }
 
                 StyledText {
                     text: "LRC"
                     font.pixelSize: 11
-                    color: "#000000"
+                    color: root._apiStatusColor(root.lrclibStatus)
                     font.weight: Font.Bold
                     anchors.verticalCenter: parent.verticalCenter
                 }
@@ -1153,14 +1153,14 @@ PluginComponent {
                 DankIcon {
                     name: "storage"
                     size: 14
-                    color: "#000000"
+                    color: root._apiStatusColor(root.cacheStatus)
                     anchors.verticalCenter: parent.verticalCenter
                 }
 
                 StyledText {
                     text: "缓存"
                     font.pixelSize: 11
-                    color: "#000000"
+                    color: root._apiStatusColor(root.cacheStatus)
                     font.weight: Font.Bold
                     anchors.verticalCenter: parent.verticalCenter
                 }

@@ -1430,7 +1430,7 @@ PluginComponent {
                                     Timer {
                                         id: progressPollTimer
                                         interval: 100
-                                        running: root.activePlayer !== null && popout.visible
+                                        running: root.activePlayer !== null
                                         repeat: true
                                         onTriggered: {
                                             root._forceUpdate = !root._forceUpdate;

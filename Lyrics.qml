@@ -1219,6 +1219,7 @@ PluginComponent {
                         // - 尺寸：200x200，较大的视觉冲击力
                         // - 位置：卡片右上角，部分超出边界营造视觉层次感
                         // - z-index: 10，确保封面显示在歌曲信息上方
+                        // - 旋转动画：播放时旋转，暂停时停止
                         // ============================================
                         DankAlbumArt {
                             id: _coverArtContainer
@@ -1232,6 +1233,16 @@ PluginComponent {
                             z: 10                       // 高层级，覆盖在文字上方
                             activePlayer: root.activePlayer
                             showAnimation: true         // 启用加载动画
+
+                            // 旋转动画
+                            RotationAnimation on rotation {
+                                id: coverRotation
+                                from: 0
+                                to: 360
+                                duration: 10000          // 10秒转一圈
+                                loops: Animation.Infinite
+                                running: root.activePlayer && root.activePlayer.playbackState === MprisPlaybackState.Playing
+                            }
                         }
 
                         Row {

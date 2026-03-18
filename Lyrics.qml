@@ -1081,7 +1081,8 @@ PluginComponent {
                 StyledText {
                     text: "网易"
                     font.pixelSize: 11
-                    color: root._apiStatusColor(root.neteaseStatus)
+                    color: "#212121"
+                    font.weight: Font.Medium
                     anchors.verticalCenter: parent.verticalCenter
                 }
             }
@@ -1121,7 +1122,8 @@ PluginComponent {
                 StyledText {
                     text: "LRC"
                     font.pixelSize: 11
-                    color: root._apiStatusColor(root.lrclibStatus)
+                    color: "#212121"
+                    font.weight: Font.Medium
                     anchors.verticalCenter: parent.verticalCenter
                 }
             }
@@ -1161,7 +1163,8 @@ PluginComponent {
                 StyledText {
                     text: "缓存"
                     font.pixelSize: 11
-                    color: root._apiStatusColor(root.cacheStatus)
+                    color: "#212121"
+                    font.weight: Font.Medium
                     anchors.verticalCenter: parent.verticalCenter
                 }
             }

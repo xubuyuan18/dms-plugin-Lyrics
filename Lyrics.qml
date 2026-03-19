@@ -1132,6 +1132,7 @@ PluginComponent {
                     font.weight: Font.Bold
                     maximumLineCount: 1
                     elide: Text.ElideRight
+                    width: Math.min(implicitWidth, 350)  // 限制最大宽度，防止超长歌词溢出
                     visible: text !== ""
                 }
 

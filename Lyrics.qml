@@ -1153,6 +1153,7 @@ PluginComponent {
                     font.weight: Font.Bold
                     maximumLineCount: 1
                     elide: Text.ElideRight  // QML 自动截断超长文本
+                    width: Math.min(implicitWidth, 373)  // 限制最大宽度，防止超长标题溢出（增加1/3）
                     visible: text !== ""
                 }
             }

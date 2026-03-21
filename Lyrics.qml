@@ -43,6 +43,22 @@ PluginComponent {
         return identity.includes("firefox") || identity.includes("mozilla");
     }
     
+    // MV标识关键词（预定义，避免每次重新创建）
+    readonly property var _mvKeywords: [
+        "mv", "music video", "official video", "official mv", 
+        "musicvideo", "video clip", "videoclip",
+        "【mv】", "【music video】", "【官方mv】", "【官方版】",
+        "official music video", "official hd", "official 4k",
+        "歌词版", "歌词mv", "lyrics video", "lyric video"
+    ]
+    
+    // 非MV视频关键词
+    readonly property var _nonMvKeywords: [
+        "tutorial", "review", "unboxing", "gameplay", 
+        "walkthrough", "guide", "how to", "ep.", "episode",
+        "教程", "评测", "开箱", "游戏", "攻略", "第", "集"
+    ]
+    
     // 检测是否为MV（音乐视频）
     readonly property bool isMusicVideo: {
         if (!isFirefox) return false;
@@ -50,34 +66,20 @@ PluginComponent {
         var title = currentTitle.toLowerCase();
         var artist = currentArtist.toLowerCase();
         
-        // MV标识关键词
-        var mvKeywords = [
-            "mv", "music video", "official video", "official mv", 
-            "musicvideo", "video clip", "videoclip",
-            "【mv】", "【music Video】", "【官方mv】", "【官方版】",
-            "official music video", "official hd", "official 4k",
-            "歌词版", "歌词mv", "lyrics video", "lyric video"
-        ];
-        
         // 检查标题是否包含MV关键词
-        for (var i = 0; i < mvKeywords.length; i++) {
-            if (title.includes(mvKeywords[i])) return true;
+        for (var i = 0; i < _mvKeywords.length; i++) {
+            if (title.includes(_mvKeywords[i])) return true;
         }
         
         // 检查是否同时有艺术家和较短的时长（通常MV 3-6分钟）
         if (artist && artist !== "未知艺术家" && currentDuration > 120 && currentDuration < 600) {
             // 如果标题看起来像歌曲名（不包含明显的非MV视频关键词）
-            var nonMvKeywords = ["tutorial", "review", "unboxing", "gameplay", 
-                                "walkthrough", "guide", "how to", "ep.", "episode",
-                                "教程", "评测", "开箱", "游戏", "攻略", "第", "集"];
-            var isNonMv = false;
-            for (var j = 0; j < nonMvKeywords.length; j++) {
-                if (title.includes(nonMvKeywords[j])) {
-                    isNonMv = true;
-                    break;
+            for (var j = 0; j < _nonMvKeywords.length; j++) {
+                if (title.includes(_nonMvKeywords[j])) {
+                    return false;
                 }
             }
-            if (!isNonMv) return true;
+            return true;
         }
         
         return false;

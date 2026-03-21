@@ -1,8 +1,8 @@
 {
   "id": "lyrics",
   "name": "Lyrics",
-  "description": "从多个来源显示同步音乐歌词，支持音量控制",
-  "version": "1.5.1",
+  "description": "从多个来源显示同步音乐歌词，支持火狐浏览器视频/MV识别",
+  "version": "1.6.0",
   "author": "xubuyuan18",
   "icon": "lyrics",
   "type": "widget",

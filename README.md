@@ -1,6 +1,6 @@
 # Lyrics Plugin for DankMaterialShell
 
-![Version](https://img.shields.io/badge/version-1.5.0-blue)
+![Version](https://img.shields.io/badge/version-1.6.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![DMS](https://img.shields.io/badge/DankMaterialShell-1.4+-purple)
 
@@ -24,6 +24,7 @@
 - **实时同步** - 基于 MPRIS 播放进度自动滚动
 - **本地缓存** - 自动缓存至 `~/.cache/Lyrics/`
 - **播放控制** - 集成上一首/播放/暂停/下一首
+- **🔥 火狐浏览器视频/MV 识别** - 自动识别 MV 并搜索歌词，普通视频显示封面和标题
 
 ## 安装
 
@@ -111,6 +112,28 @@ https://api.example.com/lyrics?title={title}&artist={artist}&album={album}
 - 纯音乐，请欣赏
 - Instrumental
 - 无歌词 / 暂无歌词
+
+### 火狐浏览器视频/MV 识别 (v1.6.0+)
+
+针对火狐浏览器播放视频时的特殊处理：
+
+**识别逻辑**:
+1. 检测播放器身份为 Firefox/Mozilla
+2. 分析视频标题判断是否包含 MV 关键词：
+   - `MV`, `Music Video`, `Official Video`, `Official MV`
+   - `歌词版`, `歌词MV`, `Lyrics Video`
+   - 中文标识：`【MV】`, `【官方MV】`, `【官方版】`
+3. 结合艺术家信息和视频时长（3-6分钟）辅助判断
+
+**行为差异**:
+| 类型 | 状态栏显示 | 歌词搜索 |
+|------|-----------|---------|
+| **MV** | 🎵 播放器名称 + "MV" | ✅ 搜索歌词 |
+| **普通视频** | 🎬 Firefox 视频 + 视频标题 | ❌ 跳过搜索，仅显示封面和标题 |
+
+**示例**:
+- `周杰伦 - 七里香 (Official MV)` → 识别为 MV，搜索歌词
+- `Python 教程 - 第1集` → 识别为普通视频，显示封面和标题
 
 ## 许可证
 

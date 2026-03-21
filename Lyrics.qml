@@ -34,6 +34,73 @@ PluginComponent {
     property var allPlayers: MprisController.availablePlayers
 
     // ============================================
+    // 浏览器视频检测
+    // ============================================
+    
+    // 检测是否为火狐浏览器
+    readonly property bool isFirefox: {
+        var identity = activePlayer?.identity?.toLowerCase() || "";
+        return identity.includes("firefox") || identity.includes("mozilla");
+    }
+    
+    // 检测是否为MV（音乐视频）
+    readonly property bool isMusicVideo: {
+        if (!isFirefox) return false;
+        
+        var title = currentTitle.toLowerCase();
+        var artist = currentArtist.toLowerCase();
+        
+        // MV标识关键词
+        var mvKeywords = [
+            "mv", "music video", "official video", "official mv", 
+            "musicvideo", "video clip", "videoclip",
+            "【mv】", "【music Video】", "【官方mv】", "【官方版】",
+            "official music video", "official hd", "official 4k",
+            "歌词版", "歌词mv", "lyrics video", "lyric video"
+        ];
+        
+        // 检查标题是否包含MV关键词
+        for (var i = 0; i < mvKeywords.length; i++) {
+            if (title.includes(mvKeywords[i])) return true;
+        }
+        
+        // 检查是否同时有艺术家和较短的时长（通常MV 3-6分钟）
+        if (artist && artist !== "未知艺术家" && currentDuration > 120 && currentDuration < 600) {
+            // 如果标题看起来像歌曲名（不包含明显的非MV视频关键词）
+            var nonMvKeywords = ["tutorial", "review", "unboxing", "gameplay", 
+                                "walkthrough", "guide", "how to", "ep.", "episode",
+                                "教程", "评测", "开箱", "游戏", "攻略", "第", "集"];
+            var isNonMv = false;
+            for (var j = 0; j < nonMvKeywords.length; j++) {
+                if (title.includes(nonMvKeywords[j])) {
+                    isNonMv = true;
+                    break;
+                }
+            }
+            if (!isNonMv) return true;
+        }
+        
+        return false;
+    }
+    
+    // 是否为浏览器视频模式（火狐播放视频但不是MV）
+    readonly property bool isBrowserVideo: {
+        return isFirefox && !isMusicVideo && currentTitle !== "";
+    }
+    
+    // 是否应该搜索歌词
+    readonly property bool shouldSearchLyrics: {
+        // 不是火狐浏览器 - 正常搜索歌词
+        if (!isFirefox) return true;
+        
+        // 是火狐浏览器且是MV - 搜索歌词
+        if (isMusicVideo) return true;
+        
+        // 是火狐浏览器但不是MV - 不搜索歌词
+        return false;
+    }
+
+    // ============================================
     // 状态枚举
     // ============================================
 
@@ -238,6 +305,41 @@ PluginComponent {
         });
     }
 
+    /**
+     * 清除当前歌曲的缓存并重新搜索
+     */
+    function clearCurrentCacheAndRefetch() {
+        if (!currentTitle) return;
+        
+        var cacheFile = _cacheFilePath(currentTitle, currentArtist);
+        console.info("[Lyrics] 清除缓存: \"" + currentTitle + "\"");
+        
+        // 使用 Process 删除缓存文件
+        var deleter = cacheDeleterProcessComponent.createObject(root, {
+            cacheFilePath: cacheFile
+        });
+        deleter.running = true;
+    }
+
+    // 缓存删除进程组件
+    Component {
+        id: cacheDeleterProcessComponent
+        Process {
+            property string cacheFilePath: ""
+            
+            command: ["rm", "-f", cacheFilePath]
+            
+            onExited: (exitCode, exitStatus) => {
+                console.info("[Lyrics] 缓存已清除，重新搜索...");
+                // 重置状态并重新搜索
+                root._lastFetchedTrack = "";
+                root._lastFetchedArtist = "";
+                root.fetchLyricsIfNeeded();
+                destroy();
+            }
+        }
+    }
+
     // 缓存读取组件
     Component {
         id: cacheReaderComponent
@@ -320,6 +422,16 @@ PluginComponent {
         _resetLyricsState();
 
         _logSongChange();
+
+        // 检查是否应该搜索歌词（火狐浏览器非MV视频不搜索）
+        if (!shouldSearchLyrics) {
+            console.info("[Lyrics] 浏览器视频模式: 显示封面和标题，跳过歌词搜索");
+            lyricStatus = lyricState.idle;
+            lrclibStatus = status.skippedConfig;
+            neteaseStatus = status.skippedConfig;
+            cacheStatus = status.skippedConfig;
+            return;
+        }
 
         var capturedTitle = currentTitle;
         var capturedArtist = currentArtist;
@@ -1118,9 +1230,26 @@ PluginComponent {
                 spacing: 8
                 width: Math.min(implicitWidth, 350)
 
+                // 浏览器视频模式指示器（火狐非MV视频）
+                StyledText {
+                    text: {
+                        if (root.isBrowserVideo) {
+                            return "🎬 ";
+                        }
+                        return "";
+                    }
+                    font.pixelSize: pluginData.lyricsFontSize || Theme.fontSizeMedium
+                    visible: root.isBrowserVideo
+                }
+
                 // 歌词 - 加粗显示，统一使用主题字体
                 StyledText {
                     text: {
+                        // 浏览器视频模式显示视频标题
+                        if (root.isBrowserVideo) {
+                            return root.currentTitle || "";
+                        }
+                        // 正常歌词模式
                         if (root.lyricsLines.length > 0 && root.currentLineIndex >= 0 && root.lyricsLines[root.currentLineIndex].text) {
                             return root.lyricsLines[root.currentLineIndex].text;
                         }
@@ -1140,6 +1269,9 @@ PluginComponent {
                 // 使用 QML 的 elide 机制自动截断超长文本
                 StyledText {
                     text: {
+                        // 浏览器视频模式下不显示这个额外的标题
+                        if (root.isBrowserVideo) return "";
+                        
                         // 没有歌词或纯音乐时显示歌曲名
                         if (root.lyricsLines.length === 0 || 
                             (root.currentLineIndex >= 0 && root.lyricsLines[root.currentLineIndex] && 
@@ -1300,7 +1432,8 @@ PluginComponent {
                 }
             }
 
-            ToolTip.text: root.chipLabel(root.cacheStatus)
+            ToolTip.text: root.cacheStatus === status.cacheHit ? 
+                I18n.tr("点击清除缓存并重新搜索") : root.chipLabel(root.cacheStatus)
             ToolTip.visible: cacheMouse.containsMouse
             ToolTip.delay: 500
 
@@ -1308,6 +1441,12 @@ PluginComponent {
                 id: cacheMouse
                 anchors.fill: parent
                 hoverEnabled: true
+                cursorShape: root.cacheStatus === status.cacheHit ? Qt.PointingHandCursor : Qt.ArrowCursor
+                onClicked: {
+                    if (root.cacheStatus === status.cacheHit) {
+                        root.clearCurrentCacheAndRefetch();
+                    }
+                }
             }
         }
     }
@@ -1465,7 +1604,13 @@ PluginComponent {
                                     }
 
                                     StyledText {
-                                        text: root.activePlayer ? (root.activePlayer.identity || "未知播放器") + " 正在播放" : "无活动播放器"
+                                        text: {
+                                            if (!root.activePlayer) return "无活动播放器";
+                                            var identity = root.activePlayer.identity || "未知播放器";
+                                            if (root.isBrowserVideo) return "🎬 Firefox 视频";
+                                            if (root.isMusicVideo) return "🎵 " + identity + " MV";
+                                            return identity + " 正在播放";
+                                        }
                                         font.pixelSize: Theme.fontSizeMedium
                                         font.weight: Font.DemiBold
                                         color: root.activePlayer ? Theme.primary : Theme.surfaceVariantText

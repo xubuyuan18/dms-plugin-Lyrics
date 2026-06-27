@@ -107,33 +107,6 @@ https://api.example.com/lyrics?title={title}&artist={artist}&album={album}
 - 文件名: `fnv1a32(title + "\0" + artist).json`
 - 内容: `{lines, source, cachedAt}`
 
-### 纯音乐检测
-自动过滤包含以下标记的歌词行：
-- 纯音乐，请欣赏
-- Instrumental
-- 无歌词 / 暂无歌词
-
-### 火狐浏览器视频/MV 识别 (v1.6.0+)
-
-针对火狐浏览器播放视频时的特殊处理：
-
-**识别逻辑**:
-1. 检测播放器身份为 Firefox/Mozilla
-2. 分析视频标题判断是否包含 MV 关键词：
-   - `MV`, `Music Video`, `Official Video`, `Official MV`
-   - `歌词版`, `歌词MV`, `Lyrics Video`
-   - 中文标识：`【MV】`, `【官方MV】`, `【官方版】`
-3. 结合艺术家信息和视频时长（3-6分钟）辅助判断
-
-**行为差异**:
-| 类型 | 状态栏显示 | 歌词搜索 |
-|------|-----------|---------|
-| **MV** | 🎵 播放器名称 + "MV" | ✅ 搜索歌词 |
-| **普通视频** | 🎬 Firefox 视频 + 视频标题 | ❌ 跳过搜索，仅显示封面和标题 |
-
-**示例**:
-- `周杰伦 - 七里香 (Official MV)` → 识别为 MV，搜索歌词
-- `Python 教程 - 第1集` → 识别为普通视频，显示封面和标题
 
 ## 许可证
 
